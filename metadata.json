@@ -1,0 +1,5 @@
+{
+  "name": "Writ Petition Generator - Delhi High Court",
+  "description": "A production-grade web application to generate submission-ready Delhi High Court writ petitions with automatic indexing, formatting, and email delivery.",
+  "requestFramePermissions": []
+}

@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.times-new-roman {
+    font-family: 'Times New Roman', Times, serif;
+}
+
+@media print {
+    body {
+        background: white !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    @page {
+        size: A4;
+        margin: 20mm;
+
+        @bottom-right {
+            content: counter(page);
+        }
+    }
+
+    .page-number::after {
+        content: counter(page);
+    }
+}
+
+/* Custom scrollbar for pro feel */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
