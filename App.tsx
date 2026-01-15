@@ -13,7 +13,7 @@ import {
 } from './types';
 import { TextInput, SectionHeader, RepeatableBlock, SelectInput } from './components/FormFields';
 import { DocumentPreview } from './components/DocumentPreview';
-import { CheckCircle, FileText, Send, Printer, AlertTriangle, Trash2, Mail, Gavel, Plus, Paperclip, MessageSquare, StickyNote, Download as DownloadIcon, DownloadCloud, Edit, CornerUpRight, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle, FileText, Send, Printer, AlertTriangle, Trash2, Mail, Gavel, Plus, Paperclip, MessageSquare, StickyNote, Download as DownloadIcon, DownloadCloud, Edit, CornerUpRight, CheckCircle2, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 
 const INITIAL_DATA: WritFormData = {
   highCourt: "IN THE HIGH COURT OF DELHI AT NEW DELHI",
@@ -71,6 +71,7 @@ export default function App() {
   const [errors, setErrors] = useState<string[]>([]);
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isPreviewMaximized, setIsPreviewMaximized] = useState(false);
   const [annotations, setAnnotations] = useState<Annotation[]>(() => {
     const saved = localStorage.getItem('petition_feedback');
     return saved ? JSON.parse(saved) : [];
@@ -199,7 +200,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-[1400px]">
+      <main className="flex-1 container mx-auto px-4 py-8 max-w-[1600px]">
         {isSuccess ? (
           <div className="bg-white rounded-[2rem] shadow-2xl p-16 text-center max-w-2xl mx-auto mt-10 no-print">
             <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-8"><CheckCircle className="w-12 h-12" /></div>
@@ -211,8 +212,8 @@ export default function App() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            <div className={`${activeTab === 'form' ? 'block' : 'hidden lg:block'} no-print`}>
+          <div className={`grid grid-cols-1 ${isPreviewMaximized ? '' : 'lg:grid-cols-2'} gap-8 items-start`}>
+            <div className={`${activeTab === 'form' ? 'block' : 'hidden lg:block'} ${isPreviewMaximized ? 'hidden' : ''} no-print`}>
               <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 p-8 md:p-12">
 
                 {errors.length > 0 && (
@@ -429,8 +430,8 @@ export default function App() {
               </div>
             </div>
 
-            <div className={`${activeTab === 'preview' ? 'block' : 'hidden lg:block'} sticky top-24 self-start no-print`}>
-              <div className="bg-gray-900 rounded-[2.5rem] shadow-2xl overflow-hidden border-8 border-gray-800">
+            <div className={`${activeTab === 'preview' ? 'block' : 'hidden lg:block'} ${isPreviewMaximized ? 'col-span-full' : 'sticky top-24 self-start'} no-print`}>
+              <div className={`bg-gray-900 rounded-[2.5rem] shadow-2xl overflow-hidden border-8 border-gray-800 transition-all duration-500 ${isPreviewMaximized ? 'w-full' : ''}`}>
                 <div className="bg-gray-800 px-8 py-3 flex justify-between items-center text-white border-b border-gray-700">
                   <div className="flex gap-1.5 items-center">
                     <div className="flex gap-1.5"><span className="w-2.5 h-2.5 bg-red-500 rounded-full"></span><span className="w-2.5 h-2.5 bg-yellow-500 rounded-full"></span><span className="w-2.5 h-2.5 bg-green-500 rounded-full"></span></div>
@@ -438,11 +439,14 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></div><span className="text-[9px] font-black tracking-widest uppercase opacity-60">Synced</span></div>
+                    <button onClick={() => setIsPreviewMaximized(!isPreviewMaximized)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors text-white/60 hover:text-white" title={isPreviewMaximized ? "Exit Maximize" : "Maximize"}>
+                      {isPreviewMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                    </button>
                     <button onClick={handlePrint} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors text-white/60 hover:text-white"><Printer className="w-4 h-4" /></button>
                   </div>
                 </div>
-                <div className="bg-gray-200 overflow-auto h-[calc(100vh-12rem)] flex justify-center p-4 lg:p-8 relative">
-                  <div className="scale-[0.5] sm:scale-[0.6] md:scale-[0.7] lg:scale-[0.8] xl:scale-[0.9] origin-top transition-transform duration-300">
+                <div className={`bg-gray-200 overflow-auto h-[calc(100vh-12rem)] relative custom-scrollbar`}>
+                  <div className={`flex flex-col items-center p-4 lg:p-8 min-w-full ${isPreviewMaximized ? 'scale-100' : 'scale-[0.5] sm:scale-[0.6] md:scale-[0.7] lg:scale-[0.8] xl:scale-[0.9]'} origin-top transition-transform duration-300`}>
                     <DocumentPreview
                       data={formData}
                       reviewMode={isReviewMode}
