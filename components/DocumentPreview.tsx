@@ -1,13 +1,91 @@
-
 import React, { useMemo } from 'react';
-import { WritFormData } from '../types';
+import { Annotation, WritFormData } from '../types';
 import { FORMATTING, HIGH_COURT_DEFAULT, JURISDICTION_DEFAULT, getAnnexureTitle } from '../constants';
+import { Trash2 } from 'lucide-react';
 
 interface PreviewProps {
   data: WritFormData;
+  reviewMode?: boolean;
+  annotations?: Annotation[];
+  onAddAnnotation?: (anno: Annotation) => void;
+  onRemoveAnnotation?: (id: string) => void;
 }
 
-export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
+export const DocumentPreview: React.FC<PreviewProps> = ({
+  data,
+  reviewMode = false,
+  annotations = [],
+  onAddAnnotation,
+  onRemoveAnnotation
+}) => {
+  const handlePageClick = (e: React.MouseEvent<HTMLDivElement>, pageNum: number) => {
+    if (!reviewMode || !onAddAnnotation) return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    const author = prompt("Enter your name:", "Advocate Partner") || "Anonymous";
+    const text = prompt("Enter your comment/suggestion:");
+
+    if (text) {
+      onAddAnnotation({
+        id: Math.random().toString(36).substr(2, 9),
+        elementId: `page-${pageNum}`,
+        text,
+        author,
+        x,
+        y,
+        pageNum
+      });
+    }
+  };
+
+  const Page = ({ children, className = "", pageNum, actualPageNum, key }: { children: React.ReactNode, className?: string, pageNum?: number, actualPageNum: number, key?: React.Key }) => (
+    <div
+      onClick={(e) => handlePageClick(e, actualPageNum)}
+      key={key}
+      className={`bg-white shadow-lg mx-auto mb-10 print:mb-0 print:shadow-none print:break-after-page relative ${className} ${reviewMode ? 'cursor-crosshair hover:ring-2 hover:ring-blue-400 transition-all' : ''}`}
+      style={{ width: '210mm', minHeight: '297mm', padding: `${FORMATTING.MARGINS.TOP} ${FORMATTING.MARGINS.RIGHT} ${FORMATTING.MARGINS.BOTTOM} ${FORMATTING.MARGINS.LEFT}` }}>
+      <div className="times-new-roman text-justify" style={{ fontSize: '14pt', lineHeight: '1.5', color: 'black' }}>
+        {children}
+      </div>
+      {pageNum !== undefined && (
+        <div className="absolute bottom-8 left-0 right-0 text-center font-bold text-sm no-print-pagination">
+          {pageNum}
+        </div>
+      )}
+      {/* Annotation Pins */}
+      {annotations.filter(a => a.pageNum === actualPageNum).map(anno => (
+        <div
+          key={anno.id}
+          className="absolute z-50 group"
+          style={{ left: `${anno.x}%`, top: `${anno.y}%` }}
+        >
+          <div className="w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-lg -translate-x-1/2 -translate-y-1/2 animate-bounce cursor-help group-hover:scale-125 transition-transform border-2 border-white">
+            !
+          </div>
+          <div className="absolute left-8 top-0 w-56 bg-white p-3 rounded-xl shadow-2xl border border-red-100 opacity-0 group-hover:opacity-100 transition-opacity z-50 pointer-events-auto">
+            <div className="flex justify-between items-start mb-1">
+              <span className="text-[9px] font-black text-red-600 uppercase tracking-widest">{anno.author}</span>
+              {onRemoveAnnotation && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveAnnotation(anno.id);
+                  }}
+                  className="text-gray-300 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-gray-800 leading-relaxed font-medium">"{anno.text}"</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
   // Auto-indexing logic simulating high-fidelity PDF pagination
   const indexItems = useMemo(() => {
     let p = 1;
@@ -61,21 +139,6 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
 
     return items;
   }, [data.annexures, data.applications, data.proofOfServiceUploads, data.letterOfAuthorityUpload, data.year]);
-
-  const Page = ({ children, className = "", pageNum }: { children: React.ReactNode, className?: string, pageNum?: number, key?: React.Key }) => (
-    <div className={`bg-white shadow-lg mx-auto mb-10 print:mb-0 print:shadow-none print:break-after-page relative ${className}`}
-      style={{ width: '210mm', minHeight: '297mm', padding: `${FORMATTING.MARGINS.TOP} ${FORMATTING.MARGINS.RIGHT} ${FORMATTING.MARGINS.BOTTOM} ${FORMATTING.MARGINS.LEFT}` }}>
-      <div className="times-new-roman text-justify" style={{ fontSize: '14pt', lineHeight: '1.5', color: 'black' }}>
-        {children}
-      </div>
-      {pageNum !== undefined && (
-        <div className="absolute bottom-8 left-0 right-0 text-center font-bold text-sm no-print-pagination">
-          {pageNum}
-        </div>
-      )}
-    </div>
-  );
-
 
 
   const getGroundsAlpha = (index: number) => {
@@ -152,11 +215,12 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
   );
 
   let p = 0;
+  let ap = 0;
 
   return (
     <div className="print:bg-white bg-gray-200 py-10 print:p-0">
       {/* 0. LISTING PROFORMA */}
-      <Page pageNum={undefined}>
+      <Page pageNum={undefined} actualPageNum={++ap}>
         <div className="text-center font-bold underline mb-10 uppercase text-lg">Listing Proforma</div>
         <table className="w-full border-collapse border border-black text-sm">
           <tbody>
@@ -197,7 +261,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
       </Page>
 
       {/* 1. INDEX */}
-      <Page pageNum={++p}>
+      <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold underline mb-6">INDEX</div>
         <table className="w-full border-collapse border border-black">
@@ -234,7 +298,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
       </Page>
 
       {/* 2. URGENT APPLICATION & CERTIFICATE */}
-      <Page pageNum={++p}>
+      <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold underline mb-10 uppercase">Urgent Application</div>
         <p className="mb-4">To,</p>
@@ -249,7 +313,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
       </Page>
 
       {/* 3. NOTICE OF MOTION */}
-      <Page pageNum={++p}>
+      <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold underline mb-10 uppercase">Notice of Motion</div>
         <p className="mb-4">To,</p>
@@ -266,7 +330,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
       </Page>
 
       {/* 3A. MEMO OF PARTIES */}
-      <Page pageNum={++p}>
+      <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold underline mb-10 uppercase text-lg">Memo of Parties</div>
 
@@ -303,7 +367,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
       </Page>
 
       {/* 4. SYNOPSIS & DATES */}
-      <Page pageNum={++p}>
+      <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold underline mb-4 uppercase">Synopsis</div>
         <p className="italic font-bold mb-6">{data.synopsisDescription}</p>
@@ -329,7 +393,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
       </Page>
 
       {/* 5. MAIN PETITION */}
-      <Page pageNum={++p}>
+      <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold mb-8 text-xl px-10">
           {data.petitionDescriptionMain || `WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA SEEKING THE ISSUANCE OF A WRIT, ORDER OR DIRECTION IN THE NATURE OF CERTIORARI, MANDAMUS OR ANY OTHER APPROPRIATE WRIT...`}
@@ -380,7 +444,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
       </Page>
 
       {/* 6. AFFIDAVIT */}
-      <Page pageNum={++p}>
+      <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold underline mb-10 uppercase text-lg">Affidavit</div>
         <p className="mb-6 leading-relaxed">
@@ -417,7 +481,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
 
       {/* 7. ANNEXURES */}
       {data.annexures.map((ann, idx) => (
-        <Page key={ann.id} pageNum={++p}>
+        <Page key={ann.id} pageNum={++p} actualPageNum={++ap}>
           <div className="flex justify-between font-bold mb-10 uppercase">
             <span>Annexure {getAnnexureTitle(idx)}</span>
           </div>
@@ -434,7 +498,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
       {/* 8. APPLICATIONS */}
       {data.applications.map((app) => (
         <React.Fragment key={app.id}>
-          <Page pageNum={++p}>
+          <Page pageNum={++p} actualPageNum={++ap}>
             <Header />
             <div className="text-center font-bold mb-8 text-xl px-10 uppercase">
               IN THE MATTER OF:<br />
@@ -453,7 +517,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
           </Page>
 
           {/* Application Affidavit */}
-          <Page pageNum={++p}>
+          <Page pageNum={++p} actualPageNum={++ap}>
             <Header />
             <div className="text-center font-bold underline mb-10 uppercase text-lg">Affidavit</div>
             <p className="mb-6 leading-relaxed">
@@ -476,7 +540,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
       ))}
       {/* 9. LETTER OF AUTHORITY */}
       {data.letterOfAuthorityUpload && (
-        <Page pageNum={++p}>
+        <Page pageNum={++p} actualPageNum={++ap}>
           <Header />
           <div className="text-center font-bold underline mb-20 uppercase text-lg">Letter of Authority</div>
           <div className="border-2 border-dashed border-gray-300 h-[600px] flex items-center justify-center text-gray-400 font-bold italic">
@@ -487,7 +551,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
       )}
 
       {/* 10. VAKALATNAMA */}
-      <Page pageNum={++p}>
+      <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold underline mb-20 uppercase text-lg">Vakalatnama</div>
         <div className="grid grid-cols-2 gap-10 mt-20">
@@ -512,7 +576,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({ data }) => {
 
       {/* 11. PROOF OF SERVICE */}
       {data.proofOfServiceUploads.length > 0 && (
-        <Page pageNum={++p}>
+        <Page pageNum={++p} actualPageNum={++ap}>
           <Header />
           <div className="text-center font-bold underline mb-20 uppercase text-lg">Proof of Service</div>
           <div className="space-y-4">

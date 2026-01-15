@@ -4,6 +4,7 @@ import {
   Petitioner,
   Respondent,
   Advocate,
+  Annotation,
   WritFormData,
   Annexure,
   DateEntry,
@@ -12,7 +13,7 @@ import {
 } from './types';
 import { TextInput, SectionHeader, RepeatableBlock, SelectInput } from './components/FormFields';
 import { DocumentPreview } from './components/DocumentPreview';
-import { CheckCircle, FileText, Send, Printer, AlertTriangle, Trash2, Mail, Gavel, Plus, Paperclip } from 'lucide-react';
+import { CheckCircle, FileText, Send, Printer, AlertTriangle, Trash2, Mail, Gavel, Plus, Paperclip, MessageSquare, StickyNote, Download as DownloadIcon, DownloadCloud, Edit, CornerUpRight, CheckCircle2 } from 'lucide-react';
 
 const INITIAL_DATA: WritFormData = {
   highCourt: "IN THE HIGH COURT OF DELHI AT NEW DELHI",
@@ -68,14 +69,89 @@ export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [annotations, setAnnotations] = useState<Annotation[]>(() => {
+    const saved = localStorage.getItem('petition_feedback');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  React.useEffect(() => {
+    localStorage.setItem('petition_feedback', JSON.stringify(annotations));
+  }, [annotations]);
+
+  const handleAddAnnotation = (anno: Annotation) => {
+    setAnnotations(prev => [...prev, anno]);
+  };
+
+  const removeAnnotation = (id: string) => {
+    setAnnotations(prev => prev.filter(a => a.id !== id));
+  };
+
+  const editAnnotation = (id: string) => {
+    const anno = annotations.find(a => a.id === id);
+    if (!anno) return;
+    const newText = prompt("Edit comment:", anno.text);
+    if (newText !== null) {
+      setAnnotations(prev => prev.map(a => a.id === id ? { ...a, text: newText } : a));
+    }
+  };
+
+  const addReply = (id: string) => {
+    const author = prompt("Enter your name:", "Advocate Partner") || "Anonymous";
+    const text = prompt("Enter your reply:");
+    if (text) {
+      setAnnotations(prev => prev.map(a => {
+        if (a.id === id) {
+          const newReply = {
+            id: Math.random().toString(36).substr(2, 9),
+            author,
+            text,
+            timestamp: new Date().toLocaleTimeString()
+          };
+          return { ...a, replies: [...(a.replies || []), newReply] };
+        }
+        return a;
+      }));
+    }
+  };
+
+  const toggleResolve = (id: string) => {
+    setAnnotations(prev => prev.map(a => a.id === id ? { ...a, isResolved: !a.isResolved } : a));
+  };
+
+  const exportFeedback = () => {
+    const text = annotations.map(a => `[PAGE ${a.pageNum}] ${a.author.toUpperCase()}: ${a.text}`).join('\n\n---\n\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Feedback_${formData.petitioners[0]?.name || 'Petition'}.txt`;
+    link.click();
+  };
 
   const updateField = useCallback((field: keyof WritFormData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
+
+  const gf = (label: string) => ({
+    reviewMode: isReviewMode,
+    annotations: annotations.filter(a => a.elementId === label && a.pageNum === 0),
+    onRemoveAnnotation: removeAnnotation,
+    onEditAnnotation: editAnnotation,
+    onToggleResolve: toggleResolve,
+    onAddReply: addReply,
+    onAddAnnotation: (text: string) => handleAddAnnotation({
+      id: Math.random().toString(36).substr(2, 9),
+      elementId: label,
+      text,
+      author: prompt("Enter your name:", "Advocate Partner") || "Anonymous",
+      x: 0,
+      y: 0,
+      pageNum: 0 // 0 indicates form field
+    })
+  });
 
   const handleGenerate = async () => {
     const newErrors = [];
@@ -107,6 +183,13 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsReviewMode(!isReviewMode)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${isReviewMode ? 'bg-red-50 text-red-600 border-red-200 shadow-inner' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400'}`}
+          >
+            <StickyNote className="w-4 h-4" />
+            {isReviewMode ? 'REVIEW MODE: ON' : 'PARTNER REVIEW'}
+          </button>
           <div className="bg-gray-100 p-1 rounded-xl flex lg:hidden">
             <button onClick={() => setActiveTab('form')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'form' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>FORM</button>
             <button onClick={() => setActiveTab('preview')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'preview' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>PREVIEW</button>
@@ -123,7 +206,7 @@ export default function App() {
             <p className="text-gray-500 mb-10 text-lg">The submission-ready document has been emailed to <b>{formData.userEmail}</b>.</p>
             <div className="flex gap-4 justify-center">
               <button onClick={() => setIsSuccess(false)} className="px-8 py-4 rounded-xl font-bold bg-gray-100">Back to Editor</button>
-              <button onClick={handlePrint} className="px-8 py-4 rounded-xl font-bold bg-blue-600 text-white shadow-xl flex items-center gap-2"><Download className="w-5 h-5" /> Download PDF</button>
+              <button onClick={handlePrint} className="px-8 py-4 rounded-xl font-bold bg-blue-600 text-white shadow-xl flex items-center gap-2"><DownloadIcon className="w-5 h-5" /> Download PDF</button>
             </div>
           </div>
         ) : (
@@ -140,22 +223,22 @@ export default function App() {
 
                 <SectionHeader title="Introduction" />
                 <div className="grid grid-cols-2 gap-4">
-                  <TextInput label="High Court" value={formData.highCourt} onChange={v => updateField('highCourt', v)} />
-                  <TextInput label="Jurisdiction" value={formData.jurisdiction} onChange={v => updateField('jurisdiction', v)} />
-                  <SelectInput label="Type" value={formData.petitionType} options={[{ label: 'Civil', value: 'Civil' }, { label: 'Criminal', value: 'Criminal' }]} onChange={v => updateField('petitionType', v)} />
-                  <TextInput label="Year" value={formData.year} onChange={v => updateField('year', v)} />
+                  <TextInput label="High Court" value={formData.highCourt} onChange={v => updateField('highCourt', v)} {...gf('High Court')} />
+                  <TextInput label="Jurisdiction" value={formData.jurisdiction} onChange={v => updateField('jurisdiction', v)} {...gf('Jurisdiction')} />
+                  <SelectInput label="Type" value={formData.petitionType} options={[{ label: 'Civil', value: 'Civil' }, { label: 'Criminal', value: 'Criminal' }]} onChange={v => updateField('petitionType', v)} {...gf('Type')} />
+                  <TextInput label="Year" value={formData.year} onChange={v => updateField('year', v)} {...gf('Year')} />
                 </div>
 
                 <RepeatableBlock title="Petitioners" onAdd={() => updateField('petitioners', [...formData.petitioners, { id: Date.now().toString(), name: '', addresses: [''], city: '', pin: '', state: '', authRep: '' }])}>
                   {formData.petitioners.map((p, i) => (
                     <div key={p.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200">
                       <button onClick={() => updateField('petitioners', formData.petitioners.filter(x => x.id !== p.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                      <TextInput label={`Petitioner #${i + 1} Name`} value={p.name} onChange={v => { const up = [...formData.petitioners]; up[i].name = v; updateField('petitioners', up); }} />
-                      <TextInput label="Authorised Representative (if any)" value={p.authRep} onChange={v => { const up = [...formData.petitioners]; up[i].authRep = v; updateField('petitioners', up); }} />
+                      <TextInput label={`Petitioner #${i + 1} Name`} value={p.name} onChange={v => { const up = [...formData.petitioners]; up[i].name = v; updateField('petitioners', up); }} {...gf(`Petitioner #${i + 1} Name`)} />
+                      <TextInput label="Authorised Representative (if any)" value={p.authRep} onChange={v => { const up = [...formData.petitioners]; up[i].authRep = v; updateField('petitioners', up); }} {...gf(`Petitioner #${i + 1} Auth Rep`)} />
                       <div className="grid grid-cols-3 gap-2">
-                        <TextInput label="City" value={p.city} onChange={v => { const up = [...formData.petitioners]; up[i].city = v; updateField('petitioners', up); }} />
-                        <TextInput label="Pin" value={p.pin} onChange={v => { const up = [...formData.petitioners]; up[i].pin = v; updateField('petitioners', up); }} />
-                        <TextInput label="State" value={p.state} onChange={v => { const up = [...formData.petitioners]; up[i].state = v; updateField('petitioners', up); }} />
+                        <TextInput label="City" value={p.city} onChange={v => { const up = [...formData.petitioners]; up[i].city = v; updateField('petitioners', up); }} {...gf(`Petitioner #${i + 1} City`)} />
+                        <TextInput label="Pin" value={p.pin} onChange={v => { const up = [...formData.petitioners]; up[i].pin = v; updateField('petitioners', up); }} {...gf(`Petitioner #${i + 1} Pin`)} />
+                        <TextInput label="State" value={p.state} onChange={v => { const up = [...formData.petitioners]; up[i].state = v; updateField('petitioners', up); }} {...gf(`Petitioner #${i + 1} State`)} />
                       </div>
                     </div>
                   ))}
@@ -165,14 +248,14 @@ export default function App() {
                   {formData.respondents.map((r, i) => (
                     <div key={r.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200">
                       <button onClick={() => updateField('respondents', formData.respondents.filter(x => x.id !== r.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                      <TextInput label={`Respondent #${i + 1} Name`} value={r.name} onChange={v => { const up = [...formData.respondents]; up[i].name = v; updateField('respondents', up); }} />
-                      <TextInput label="Authorised Representative (if any)" value={r.authRep} onChange={v => { const up = [...formData.respondents]; up[i].authRep = v; updateField('respondents', up); }} />
+                      <TextInput label={`Respondent #${i + 1} Name`} value={r.name} onChange={v => { const up = [...formData.respondents]; up[i].name = v; updateField('respondents', up); }} {...gf(`Respondent #${i + 1} Name`)} />
+                      <TextInput label="Authorised Representative (if any)" value={r.authRep} onChange={v => { const up = [...formData.respondents]; up[i].authRep = v; updateField('respondents', up); }} {...gf(`Respondent #${i + 1} Auth Rep`)} />
                       <div className="grid grid-cols-3 gap-2">
-                        <TextInput label="City" value={r.city} onChange={v => { const up = [...formData.respondents]; up[i].city = v; updateField('respondents', up); }} />
-                        <TextInput label="Pin" value={r.pin} onChange={v => { const up = [...formData.respondents]; up[i].pin = v; updateField('respondents', up); }} />
-                        <TextInput label="State" value={r.state} onChange={v => { const up = [...formData.respondents]; up[i].state = v; updateField('respondents', up); }} />
+                        <TextInput label="City" value={r.city} onChange={v => { const up = [...formData.respondents]; up[i].city = v; updateField('respondents', up); }} {...gf(`Respondent #${i + 1} City`)} />
+                        <TextInput label="Pin" value={r.pin} onChange={v => { const up = [...formData.respondents]; up[i].pin = v; updateField('respondents', up); }} {...gf(`Respondent #${i + 1} Pin`)} />
+                        <TextInput label="State" value={r.state} onChange={v => { const up = [...formData.respondents]; up[i].state = v; updateField('respondents', up); }} {...gf(`Respondent #${i + 1} State`)} />
                       </div>
-                      <TextInput label="Email (Optional)" type="email" value={r.email} onChange={v => { const up = [...formData.respondents]; up[i].email = v; updateField('respondents', up); }} />
+                      <TextInput label="Email (Optional)" type="email" value={r.email} onChange={v => { const up = [...formData.respondents]; up[i].email = v; updateField('respondents', up); }} {...gf(`Respondent #${i + 1} Email`)} />
                     </div>
                   ))}
                 </RepeatableBlock>
@@ -184,8 +267,8 @@ export default function App() {
                         <button onClick={() => updateField('advocates', formData.advocates.filter(x => x.id !== adv.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                       )}
                       <div className="grid grid-cols-2 gap-4">
-                        <TextInput label={`Advocate #${i + 1} Name`} value={adv.name} onChange={v => { const up = [...formData.advocates]; up[i].name = v; updateField('advocates', up); }} />
-                        <TextInput label="Enrolment Number" value={adv.enrolmentNumber} onChange={v => { const up = [...formData.advocates]; up[i].enrolmentNumber = v; updateField('advocates', up); }} />
+                        <TextInput label={`Advocate #${i + 1} Name`} value={adv.name} onChange={v => { const up = [...formData.advocates]; up[i].name = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Name`)} />
+                        <TextInput label="Enrolment Number" value={adv.enrolmentNumber} onChange={v => { const up = [...formData.advocates]; up[i].enrolmentNumber = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Enrolment`)} />
 
                         <div className="col-span-2">
                           <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Addresses</p>
@@ -200,17 +283,19 @@ export default function App() {
 
                         <div className="col-span-2">
                           <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Phone Numbers</p>
-                          {adv.phoneNumbers.map((ph, pi) => (
-                            <div key={pi} className="flex gap-2 mb-2">
-                              <div className="flex-1"><TextInput label={`Phone ${pi + 1}`} value={ph} onChange={v => { const up = [...formData.advocates]; up[i].phoneNumbers[pi] = v; updateField('advocates', up); }} /></div>
-                              <button onClick={() => { const up = [...formData.advocates]; up[i].phoneNumbers.splice(pi, 1); updateField('advocates', up); }} className="text-gray-300 hover:text-red-500 mt-6"><Trash2 className="w-4 h-4" /></button>
+                          {adv.phoneNumbers.map((phone, pi) => (
+                            <div key={pi} className="flex gap-2 items-center mb-2">
+                              <div className="flex-1"><TextInput label={`Phone ${pi + 1}`} value={phone} onChange={v => { const up = [...formData.advocates]; up[i].phoneNumbers[pi] = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Phone #${pi + 1}`)} /></div>
+                              {adv.phoneNumbers.length > 1 && (
+                                <button onClick={() => { const up = [...formData.advocates]; up[i].phoneNumbers = up[i].phoneNumbers.filter((_, idx) => idx !== pi); updateField('advocates', up); }} className="text-gray-300 hover:text-red-500 mt-2"><Trash2 className="w-4 h-4" /></button>
+                              )}
                             </div>
                           ))}
                           <button onClick={() => { const up = [...formData.advocates]; up[i].phoneNumbers.push(''); updateField('advocates', up); }} className="text-[10px] font-bold text-blue-600 uppercase">+ Add Phone</button>
                         </div>
 
                         <div className="col-span-2">
-                          <TextInput label="Email" value={adv.email} onChange={v => { const up = [...formData.advocates]; up[i].email = v; updateField('advocates', up); }} />
+                          <TextInput label="Email" type="email" value={adv.email} onChange={v => { const up = [...formData.advocates]; up[i].email = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Email`)} />
                         </div>
                       </div>
                     </div>
@@ -222,27 +307,32 @@ export default function App() {
                   {formData.notes.map((note, i) => (
                     <div key={note.id} className="flex gap-2 items-start bg-white p-3 rounded-xl shadow-sm mb-2">
                       <div className="px-3 py-2 font-bold text-gray-400">Note {i + 1}</div>
-                      <div className="flex-1"><TextInput label="Note Content" value={note.text} onChange={v => { const up = [...formData.notes]; up[i].text = v; updateField('notes', up); }} /></div>
+                      <div className="flex-1"><TextInput label="Note Content" value={note.text} onChange={v => { const up = [...formData.notes]; up[i].text = v; updateField('notes', up); }} {...gf(`Note #${i + 1}`)} /></div>
                       <button onClick={() => updateField('notes', formData.notes.filter(x => x.id !== note.id))} className="text-gray-300 hover:text-red-500 mt-3"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   ))}
                 </RepeatableBlock>
 
                 <SectionHeader title="Certificate Details" />
-                <TextInput label="Certificate Content" multiline value={formData.certificateContent} onChange={v => updateField('certificateContent', v)} />
+                <TextInput label="Certificate Content" multiline value={formData.certificateContent} onChange={v => updateField('certificateContent', v)} {...gf('Certificate Content')} />
 
                 <SectionHeader title="Urgent Application" />
                 <div className="grid grid-cols-4 gap-4">
-                  <div className="col-span-1"><TextInput label="Pin Code" value={formData.urgentPinCode} onChange={v => updateField('urgentPinCode', v)} /></div>
-                  <div className="col-span-3"><TextInput label="Grounds for Urgency" multiline value={formData.urgentContent} onChange={v => updateField('urgentContent', v)} /></div>
+                  <div className="col-span-1"><TextInput label="Pin Code" value={formData.urgentPinCode} onChange={v => updateField('urgentPinCode', v)} {...gf('Urgent Pin Code')} /></div>
+                  <div className="col-span-3"><TextInput label="Grounds for Urgency" multiline value={formData.urgentContent} onChange={v => updateField('urgentContent', v)} {...gf('Grounds for Urgency')} /></div>
                 </div>
 
                 <SectionHeader title="Notice of Motion" />
                 <div className="grid grid-cols-2 gap-4">
-                  <TextInput label="Addressed To" value={formData.noticeAddressedTo} onChange={v => updateField('noticeAddressedTo', v)} />
-                  <TextInput label="Designation" value={formData.noticeDesignation} onChange={v => updateField('noticeDesignation', v)} />
-                  <TextInput label="Organisation" value={formData.noticeOrg} onChange={v => updateField('noticeOrg', v)} />
-                  <TextInput label="Hearing Date (Est)" value={formData.noticeHearingDate} onChange={v => updateField('noticeHearingDate', v)} />
+                  <TextInput label="Addressed To" value={formData.noticeAddressedTo} onChange={v => updateField('noticeAddressedTo', v)} {...gf('Notice Addressed To')} />
+                  <TextInput label="Designation" value={formData.noticeDesignation} onChange={v => updateField('noticeDesignation', v)} {...gf('Notice Designation')} />
+                  <TextInput label="Organisation" value={formData.noticeOrg} onChange={v => updateField('noticeOrg', v)} {...gf('Notice Organisation')} />
+                  <TextInput label="Hearing Date (Est)" value={formData.noticeHearingDate} onChange={v => updateField('noticeHearingDate', v)} {...gf('Notice Hearing Date (Est)')} />
+                </div>
+                <TextInput label="Petition Through" value={formData.petitionDescription} onChange={v => updateField('petitionDescription', v)} {...gf('Petition Through')} />
+                <div className="grid grid-cols-2 gap-4">
+                  <TextInput label="Location" value={formData.location} onChange={v => updateField('location', v)} {...gf('Location')} />
+                  <TextInput label="Filing Date" value={formData.filingDate} onChange={v => updateField('filingDate', v)} {...gf('Filing Date')} />
                 </div>
 
                 <SectionHeader title="Annexures" />
@@ -250,7 +340,7 @@ export default function App() {
                   {formData.annexures.map((ann, i) => (
                     <div key={ann.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200 mb-4">
                       <button onClick={() => updateField('annexures', formData.annexures.filter(x => x.id !== ann.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                      <TextInput label={`Annexure #${i + 1} Title`} value={ann.title} onChange={v => { const up = [...formData.annexures]; up[i].title = v; updateField('annexures', up); }} />
+                      <TextInput label={`Annexure #${i + 1} Title`} value={ann.title} onChange={v => { const up = [...formData.annexures]; up[i].title = v; updateField('annexures', up); }} {...gf(`Annexure #${i + 1} Title`)} />
                       <div className="border-2 border-dashed rounded-xl p-4 text-center text-gray-400 font-bold hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-center gap-2">
                         <Paperclip className="w-4 h-4" /> UPLOAD DOCUMENT
                       </div>
@@ -263,10 +353,12 @@ export default function App() {
                   {formData.applications.map((app, i) => (
                     <div key={app.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200 mb-4">
                       <button onClick={() => updateField('applications', formData.applications.filter(x => x.id !== app.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                      <TextInput label={`Application #${i + 1} Title / Purpose`} value={app.description} onChange={v => { const up = [...formData.applications]; up[i].description = v; updateField('applications', up); }} />
-                      <TextInput label="Showeth Content" multiline value={app.showethContent} onChange={v => { const up = [...formData.applications]; up[i].showethContent = v; updateField('applications', up); }} />
-                      <TextInput label="Prayer Content" multiline value={app.prayerContent} onChange={v => { const up = [...formData.applications]; up[i].prayerContent = v; updateField('applications', up); }} />
-                      <TextInput label="Specific Verification Date (if different)" value={app.verificationDate} onChange={v => { const up = [...formData.applications]; up[i].verificationDate = v; updateField('applications', up); }} />
+                      <TextInput label={`App #${i + 1} Description`} value={app.description} onChange={v => { const up = [...formData.applications]; up[i].description = v; updateField('applications', up); }} {...gf(`App #${i + 1} Desc`)} />
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <TextInput label="Showeth Content" multiline value={app.showethContent} onChange={v => { const up = [...formData.applications]; up[i].showethContent = v; updateField('applications', up); }} {...gf(`App #${i + 1} Showeth`)} />
+                        <TextInput label="Prayer Content" multiline value={app.prayerContent} onChange={v => { const up = [...formData.applications]; up[i].prayerContent = v; updateField('applications', up); }} {...gf(`App #${i + 1} Prayer`)} />
+                      </div>
+                      <TextInput label="Specific Verification Date (if different)" value={app.verificationDate} onChange={v => { const up = [...formData.applications]; up[i].verificationDate = v; updateField('applications', up); }} {...gf(`App #${i + 1} Verification Date`)} />
                     </div>
                   ))}
                 </RepeatableBlock>
@@ -281,7 +373,7 @@ export default function App() {
                 </div>
 
                 <SectionHeader title="Synopsis & List of Dates" />
-                <TextInput label="Synopsis" multiline value={formData.synopsisContent} onChange={v => updateField('synopsisContent', v)} />
+                <TextInput label="Synopsis" multiline value={formData.synopsisContent} onChange={v => updateField('synopsisContent', v)} {...gf('Synopsis')} />
                 <RepeatableBlock title="List of Dates" onAdd={() => updateField('dateList', [...formData.dateList, { id: Date.now().toString(), dates: [''], event: '' }])}>
                   {formData.dateList.map((d, i) => (
                     <div key={d.id} className="flex gap-2 items-start bg-white p-3 rounded-xl shadow-sm">
@@ -292,10 +384,10 @@ export default function App() {
                 </RepeatableBlock>
 
                 <SectionHeader title="The Writ Petition" />
-                <TextInput label="Header / Showeth" multiline value={formData.petitionShoweth} onChange={v => updateField('petitionShoweth', v)} />
-                <TextInput label="Facts" multiline value={formData.petitionFacts} onChange={v => updateField('petitionFacts', v)} />
-                <TextInput label="Grounds" multiline value={formData.petitionGrounds} onChange={v => updateField('petitionGrounds', v)} />
-                <TextInput label="Prayers" multiline value={formData.petitionPrayers} onChange={v => updateField('petitionPrayers', v)} />
+                <TextInput label="Header / Showeth" multiline value={formData.petitionShoweth} onChange={v => updateField('petitionShoweth', v)} {...gf('Header / Showeth')} />
+                <TextInput label="Facts" multiline value={formData.petitionFacts} onChange={v => updateField('petitionFacts', v)} {...gf('Facts')} />
+                <TextInput label="Grounds" multiline value={formData.petitionGrounds} onChange={v => updateField('petitionGrounds', v)} {...gf('Grounds')} />
+                <TextInput label="Prayers" multiline value={formData.petitionPrayers} onChange={v => updateField('petitionPrayers', v)} {...gf('Prayers')} />
 
                 <SectionHeader title="Letter of Authority" />
                 <div className="border-2 border-dashed rounded-xl p-8 text-center text-gray-400 font-bold hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-center gap-2 mb-6"
@@ -317,17 +409,17 @@ export default function App() {
 
                 <SectionHeader title="Affidavit Details" />
                 <div className="grid grid-cols-2 gap-4">
-                  <SelectInput label="Identity" value={formData.affidavitIdentity} options={[{ label: 'Petitioner', value: 'Petitioner' }, { label: 'Auth Rep', value: 'Authorized Representative' }]} onChange={v => updateField('affidavitIdentity', v)} />
-                  <TextInput label="Name" value={formData.affidavitName} onChange={v => updateField('affidavitName', v)} />
-                  <TextInput label="Age" value={formData.affidavitAge} onChange={v => updateField('affidavitAge', v)} />
-                  <TextInput label="Verification Date" value={formData.verificationDate} onChange={v => updateField('verificationDate', v)} />
-                  <div className="col-span-2"><TextInput label="Address" value={formData.affidavitAddress} onChange={v => updateField('affidavitAddress', v)} /></div>
-                  <div className="col-span-2"><TextInput label="Present Location" value={formData.affidavitLocation} onChange={v => updateField('affidavitLocation', v)} /></div>
+                  <SelectInput label="Identity" value={formData.affidavitIdentity} options={[{ label: 'Petitioner', value: 'Petitioner' }, { label: 'Auth Rep', value: 'Authorized Representative' }]} onChange={v => updateField('affidavitIdentity', v)} {...gf('Affidavit Identity')} />
+                  <TextInput label="Name" value={formData.affidavitName} onChange={v => updateField('affidavitName', v)} {...gf('Affidavit Name')} />
+                  <TextInput label="Age" value={formData.affidavitAge} onChange={v => updateField('affidavitAge', v)} {...gf('Affidavit Age')} />
+                  <TextInput label="Verification Date" value={formData.verificationDate} onChange={v => updateField('verificationDate', v)} {...gf('Verification Date')} />
+                  <div className="col-span-2"><TextInput label="Address" value={formData.affidavitAddress} onChange={v => updateField('affidavitAddress', v)} {...gf('Affidavit Address')} /></div>
+                  <div className="col-span-2"><TextInput label="Present Location" value={formData.affidavitLocation} onChange={v => updateField('affidavitLocation', v)} {...gf('Affidavit Location')} /></div>
                 </div>
 
                 <div className="mt-12 bg-blue-600 rounded-3xl p-10 text-white shadow-2xl">
                   <h3 className="text-2xl font-black mb-6">Dispatch Details</h3>
-                  <TextInput label="Recipient Email" type="email" value={formData.userEmail} onChange={v => updateField('userEmail', v)} placeholder="advocate@dhc.in" />
+                  <TextInput label="Recipient Email" type="email" value={formData.userEmail} onChange={v => updateField('userEmail', v)} placeholder="advocate@dhc.in" {...gf('Recipient Email')} />
                   <button disabled={isSubmitting} onClick={handleGenerate} className="w-full bg-white text-blue-600 font-black py-5 rounded-2xl shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
                     {isSubmitting ? 'GENERATING...' : <><Send className="w-5 h-5" /> GENERATE & EMAIL PETITION</>}
                   </button>
@@ -348,10 +440,76 @@ export default function App() {
                     <button onClick={handlePrint} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors text-white/60 hover:text-white"><Printer className="w-4 h-4" /></button>
                   </div>
                 </div>
-                <div className="bg-gray-200 overflow-auto h-[calc(100vh-12rem)] flex justify-center p-4 lg:p-8">
+                <div className="bg-gray-200 overflow-auto h-[calc(100vh-12rem)] flex justify-center p-4 lg:p-8 relative">
                   <div className="scale-[0.5] sm:scale-[0.6] md:scale-[0.7] lg:scale-[0.8] xl:scale-[0.9] origin-top transition-transform duration-300">
-                    <DocumentPreview data={formData} />
+                    <DocumentPreview
+                      data={formData}
+                      reviewMode={isReviewMode}
+                      annotations={annotations}
+                      onAddAnnotation={handleAddAnnotation}
+                      onRemoveAnnotation={removeAnnotation}
+                    />
                   </div>
+
+                  {isReviewMode && annotations.length > 0 && (
+                    <div className="absolute top-8 right-8 w-80 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-blue-100 p-6 no-print overflow-hidden flex flex-col max-h-[80%] transition-all animate-in slide-in-from-right duration-500">
+                      <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-sm font-black tracking-widest uppercase text-blue-600 flex items-center gap-2">
+                          <MessageSquare className="w-4 h-4" />
+                          Partner Feedback ({annotations.length})
+                        </h4>
+                        <button onClick={exportFeedback} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors" title="Export Feedback">
+                          <DownloadCloud className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                        {annotations.filter(a => a.pageNum > 0).map(anno => (
+                          <div key={anno.id} className={`p-4 rounded-2xl border transition-all group ${anno.isResolved ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-blue-50 shadow-sm'}`}>
+                            <div className="flex justify-between items-start mb-2">
+                              <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${anno.pageNum === 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-50 text-red-600'}`}>
+                                {anno.pageNum === 0 ? 'FORM FIELD' : `PAGE ${anno.pageNum}`}
+                              </span>
+                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onClick={() => editAnnotation(anno.id)} className="text-gray-400 hover:text-blue-600"><Edit className="w-3 h-3" /></button>
+                                <button onClick={() => toggleResolve(anno.id)} className={`text-gray-400 hover:text-green-600 ${anno.isResolved ? 'text-green-600' : ''}`}><CheckCircle2 className="w-3 h-3" /></button>
+                                <button onClick={() => removeAnnotation(anno.id)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                              </div>
+                            </div>
+                            <div className="mb-3">
+                              <p className="text-[11px] font-black text-gray-900 leading-none mb-1 flex items-center gap-2">
+                                {anno.author}
+                                {anno.isResolved && <span className="text-[10px] font-medium text-green-600 lowercase bg-green-50 px-1.5 rounded">resolved</span>}
+                              </p>
+                              <p className="text-xs text-gray-600 leading-relaxed italic">"{anno.text}"</p>
+                            </div>
+
+                            {/* Replies */}
+                            {anno.replies && anno.replies.length > 0 && (
+                              <div className="mt-3 pl-4 border-l-2 border-gray-100 space-y-3">
+                                {anno.replies.map(reply => (
+                                  <div key={reply.id} className="text-[11px]">
+                                    <div className="flex justify-between items-baseline mb-0.5">
+                                      <span className="font-bold text-gray-800">{reply.author}</span>
+                                      <span className="text-[9px] text-gray-400 uppercase">{reply.timestamp}</span>
+                                    </div>
+                                    <p className="text-gray-600 leading-tight">{reply.text}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            <button
+                              onClick={() => addReply(anno.id)}
+                              className="mt-3 text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 uppercase tracking-widest"
+                            >
+                              <CornerUpRight className="w-3 h-3" /> Reply
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-4 text-[9px] text-gray-400 font-bold uppercase text-center tracking-widest">Collaborative Review Active</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -359,15 +517,12 @@ export default function App() {
         )}
       </main>
 
-      <div className="hidden print:block"><DocumentPreview data={formData} /></div>
+      <div className="hidden print:block">
+        <DocumentPreview
+          data={formData}
+          annotations={annotations}
+        />
+      </div>
     </div>
-  );
-}
-
-function Download(props: any) {
-  return (
-    <svg {...props} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-    </svg>
   );
 }

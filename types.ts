@@ -56,6 +56,25 @@ export interface NoteEntry {
   text: string;
 }
 
+export interface Reply {
+  id: string;
+  author: string;
+  text: string;
+  timestamp: string;
+}
+
+export interface Annotation {
+  id: string;
+  elementId: string; // To track which section/paragraph
+  text: string;
+  author: string;
+  x: number;
+  y: number;
+  pageNum: number;
+  isResolved?: boolean;
+  replies?: Reply[];
+}
+
 export interface WritFormData {
   // Introduction
   highCourt: string;
