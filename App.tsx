@@ -13,7 +13,7 @@ import {
 } from './types';
 import { TextInput, SectionHeader, RepeatableBlock, SelectInput } from './components/FormFields';
 import { DocumentPreview } from './components/DocumentPreview';
-import { CheckCircle, FileText, Send, Printer, AlertTriangle, Trash2, Mail, Gavel, Plus, Paperclip, MessageSquare, StickyNote, Download as DownloadIcon, DownloadCloud, Edit, CornerUpRight, CheckCircle2 } from 'lucide-react';
+import { CheckCircle, FileText, Send, Printer, AlertTriangle, Trash2, Mail, Gavel, Plus, Paperclip, MessageSquare, StickyNote, Download as DownloadIcon, DownloadCloud, Edit, CornerUpRight, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const INITIAL_DATA: WritFormData = {
   highCourt: "IN THE HIGH COURT OF DELHI AT NEW DELHI",
@@ -70,6 +70,7 @@ export default function App() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [isReviewMode, setIsReviewMode] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [annotations, setAnnotations] = useState<Annotation[]>(() => {
     const saved = localStorage.getItem('petition_feedback');
     return saved ? JSON.parse(saved) : [];
@@ -451,65 +452,89 @@ export default function App() {
                     />
                   </div>
 
-                  {isReviewMode && annotations.length > 0 && (
-                    <div className="absolute top-8 right-8 w-80 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-blue-100 p-6 no-print overflow-hidden flex flex-col max-h-[80%] transition-all animate-in slide-in-from-right duration-500">
-                      <div className="flex items-center justify-between mb-6">
-                        <h4 className="text-sm font-black tracking-widest uppercase text-blue-600 flex items-center gap-2">
-                          <MessageSquare className="w-4 h-4" />
-                          Partner Feedback ({annotations.length})
-                        </h4>
-                        <button onClick={exportFeedback} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors" title="Export Feedback">
-                          <DownloadCloud className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-                        {annotations.filter(a => a.pageNum > 0).map(anno => (
-                          <div key={anno.id} className={`p-4 rounded-2xl border transition-all group ${anno.isResolved ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-blue-50 shadow-sm'}`}>
-                            <div className="flex justify-between items-start mb-2">
-                              <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${anno.pageNum === 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-50 text-red-600'}`}>
-                                {anno.pageNum === 0 ? 'FORM FIELD' : `PAGE ${anno.pageNum}`}
-                              </span>
-                              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button onClick={() => editAnnotation(anno.id)} className="text-gray-400 hover:text-blue-600"><Edit className="w-3 h-3" /></button>
-                                <button onClick={() => toggleResolve(anno.id)} className={`text-gray-400 hover:text-green-600 ${anno.isResolved ? 'text-green-600' : ''}`}><CheckCircle2 className="w-3 h-3" /></button>
-                                <button onClick={() => removeAnnotation(anno.id)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
-                              </div>
+                  {isReviewMode && annotations.filter(a => a.pageNum > 0).length > 0 && (
+                    <div className={`absolute top-8 right-8 transition-all duration-500 ease-in-out z-[100] no-print ${isSidebarExpanded ? 'w-80' : 'w-14'}`}>
+                      {isSidebarExpanded ? (
+                        <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border border-blue-100 p-6 overflow-hidden flex flex-col max-h-[80vh] animate-in slide-in-from-right duration-500">
+                          <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setIsSidebarExpanded(false)}
+                                className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                              <h4 className="text-sm font-black tracking-widest uppercase text-blue-600 flex items-center gap-2">
+                                <MessageSquare className="w-4 h-4" />
+                                Feedback ({annotations.filter(a => a.pageNum > 0).length})
+                              </h4>
                             </div>
-                            <div className="mb-3">
-                              <p className="text-[11px] font-black text-gray-900 leading-none mb-1 flex items-center gap-2">
-                                {anno.author}
-                                {anno.isResolved && <span className="text-[10px] font-medium text-green-600 lowercase bg-green-50 px-1.5 rounded">resolved</span>}
-                              </p>
-                              <p className="text-xs text-gray-600 leading-relaxed italic">"{anno.text}"</p>
-                            </div>
-
-                            {/* Replies */}
-                            {anno.replies && anno.replies.length > 0 && (
-                              <div className="mt-3 pl-4 border-l-2 border-gray-100 space-y-3">
-                                {anno.replies.map(reply => (
-                                  <div key={reply.id} className="text-[11px]">
-                                    <div className="flex justify-between items-baseline mb-0.5">
-                                      <span className="font-bold text-gray-800">{reply.author}</span>
-                                      <span className="text-[9px] text-gray-400 uppercase">{reply.timestamp}</span>
-                                    </div>
-                                    <p className="text-gray-600 leading-tight">{reply.text}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-
-                            <button
-                              onClick={() => addReply(anno.id)}
-                              className="mt-3 text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 uppercase tracking-widest"
-                            >
-                              <CornerUpRight className="w-3 h-3" /> Reply
+                            <button onClick={exportFeedback} className="p-2 hover:bg-blue-50 rounded-lg text-blue-600 transition-colors" title="Export Feedback">
+                              <DownloadCloud className="w-5 h-5" />
                             </button>
                           </div>
-                        ))}
-                      </div>
-                      <p className="mt-4 text-[9px] text-gray-400 font-bold uppercase text-center tracking-widest">Collaborative Review Active</p>
+                          <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
+                            {annotations.filter(a => a.pageNum > 0).map(anno => (
+                              <div key={anno.id} className={`p-4 rounded-2xl border transition-all group ${anno.isResolved ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-blue-50 shadow-sm'}`}>
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${anno.pageNum === 0 ? 'bg-amber-100 text-amber-700' : 'bg-red-50 text-red-600'}`}>
+                                    {anno.pageNum === 0 ? 'FORM FIELD' : `PAGE ${anno.pageNum}`}
+                                  </span>
+                                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button onClick={() => editAnnotation(anno.id)} className="text-gray-400 hover:text-blue-600"><Edit className="w-3 h-3" /></button>
+                                    <button onClick={() => toggleResolve(anno.id)} className={`text-gray-400 hover:text-green-600 ${anno.isResolved ? 'text-green-600' : ''}`}><CheckCircle2 className="w-3 h-3" /></button>
+                                    <button onClick={() => removeAnnotation(anno.id)} className="text-gray-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                                  </div>
+                                </div>
+                                <div className="mb-3">
+                                  <p className="text-[11px] font-black text-gray-900 leading-none mb-1 flex items-center gap-2">
+                                    {anno.author}
+                                    {anno.isResolved && <span className="text-[10px] font-medium text-green-600 lowercase bg-green-50 px-1.5 rounded">resolved</span>}
+                                  </p>
+                                  <p className="text-xs text-gray-600 leading-relaxed italic">"{anno.text}"</p>
+                                </div>
+
+                                {anno.replies && anno.replies.length > 0 && (
+                                  <div className="mt-3 pl-4 border-l-2 border-gray-100 space-y-3">
+                                    {anno.replies.map(reply => (
+                                      <div key={reply.id} className="text-[11px]">
+                                        <div className="flex justify-between items-baseline mb-0.5">
+                                          <span className="font-black text-gray-900">{reply.author}</span>
+                                          <span className="text-[9px] text-gray-400 uppercase font-bold">{reply.timestamp}</span>
+                                        </div>
+                                        <p className="text-gray-600">"{reply.text}"</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+
+                                <button
+                                  onClick={() => addReply(anno.id)}
+                                  className="mt-3 text-[10px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 uppercase tracking-widest"
+                                >
+                                  <CornerUpRight className="w-3 h-3" /> Reply
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setIsSidebarExpanded(true)}
+                          className="w-14 h-14 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl border border-blue-100 flex items-center justify-center text-blue-600 hover:bg-blue-50 transition-all group relative animate-in zoom-in duration-300"
+                        >
+                          <ChevronLeft className="w-6 h-6 mr-1" />
+                          <div className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                            {annotations.filter(a => a.pageNum > 0).length}
+                          </div>
+                          <div className="absolute right-full mr-4 bg-gray-900 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap uppercase tracking-widest">
+                            Review Feed
+                          </div>
+                        </button>
+                      )}
                     </div>
                   )}
+                  <p className="mt-4 text-[9px] text-gray-400 font-bold uppercase text-center tracking-widest">Collaborative Review Active</p>
                 </div>
               </div>
             </div>
