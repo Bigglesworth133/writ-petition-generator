@@ -86,9 +86,9 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       ))}
     </div>
   );
-  // Auto-indexing logic simulating high-fidelity PDF pagination
+  // Auto-indexing logic with dynamic page length estimation
   const indexItems = useMemo(() => {
-    let p = 1;
+    let p = 2; // Index is Page 1, so first item starts at Page 2
     const items = [];
 
     // 1. Urgent Application
@@ -107,38 +107,48 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     items.push({ title: 'MEMO OF PARTIES', p: p++ });
 
     // 6. Synopsis and List of Dates
-    items.push({ title: 'SYNOPSIS AND LIST OF DATES', p: `${p}-${p + 2}` });
-    p += 3;
+    // Basic estimate: 2 pages for content + 1 for List of Dates
+    const synopsisPages = Math.max(1, Math.ceil((data.synopsisContent?.length || 0) / 2500)) + 1;
+    items.push({ title: 'SYNOPSIS AND LIST OF DATES', p: synopsisPages > 1 ? `${p}-${p + synopsisPages - 1}` : p });
+    p += synopsisPages;
 
     // 7. Writ Petition
-    items.push({ title: 'WRIT PETITION', p: `${p}-${p + 8}` });
-    p += 9;
+    // Basic estimate: Facts + Grounds (~3 grounds per page) + Prayers
+    const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 2500));
+    const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 4));
+    const petitionPages = factsPages + groundsPages + 1; // +1 for prayer/sig page
+    items.push({ title: 'WRIT PETITION', p: `${p}-${p + petitionPages - 1}` });
+    p += petitionPages;
 
-    // 8. Annexures
+    // 8. Affidavit
+    items.push({ title: 'AFFIDAVIT', p: p++ });
+
+    // 9. Annexures
     data.annexures.forEach((ann, idx) => {
       items.push({ title: `ANNEXURE ${getAnnexureTitle(idx)}: A TRUE COPY OF ${ann.title}`, p: p });
-      p += 2;
+      p += 1; // Annexure covers are usually 1 page in this generator
     });
 
-    // 9. Applications
+    // 10. Applications
     data.applications.forEach((app) => {
-      items.push({ title: `MISC. APPL.: ${app.description}`, p: `${p}-${p + 3}` });
-      p += 4;
+      const appPages = 2; // Application + Affidavit
+      items.push({ title: `MISC. APPL.: ${app.description}`, p: `${p}-${p + appPages - 1}` });
+      p += appPages;
     });
 
-    // 10. Letter of Authority
+    // 11. Letter of Authority
     if (data.letterOfAuthorityUpload) {
       items.push({ title: 'LETTER OF AUTHORITY', p: p++ });
     }
 
-    // 11. Vakalatnama
+    // 12. Vakalatnama
     items.push({ title: 'VAKALATNAMA', p: p++ });
 
-    // 12. Proof of Service
+    // 13. Proof of Service
     if (data.proofOfServiceUploads.length > 0) items.push({ title: 'PROOF OF SERVICE', p: p++ });
 
     return items;
-  }, [data.annexures, data.applications, data.proofOfServiceUploads, data.letterOfAuthorityUpload, data.year]);
+  }, [data.annexures, data.applications, data.proofOfServiceUploads, data.letterOfAuthorityUpload, data.year, data.synopsisContent, data.petitionFacts, data.petitionGrounds]);
 
 
   const getGroundsAlpha = (index: number) => {
