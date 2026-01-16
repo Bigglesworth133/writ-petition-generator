@@ -9,10 +9,12 @@ import {
   Annexure,
   DateEntry,
   Application,
-  NoteEntry
+  NoteEntry,
+  Reply
 } from './types';
 import { TextInput, SectionHeader, RepeatableBlock, SelectInput } from './components/FormFields';
 import { DocumentPreview } from './components/DocumentPreview';
+import { supabase } from './lib/supabase';
 import { CheckCircle, FileText, Send, Printer, AlertTriangle, Trash2, Mail, Gavel, Plus, Paperclip, MessageSquare, StickyNote, Download as DownloadIcon, DownloadCloud, Edit, CornerUpRight, CheckCircle2, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 
 const INITIAL_DATA: WritFormData = {
@@ -72,53 +74,111 @@ export default function App() {
   const [isReviewMode, setIsReviewMode] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [isPreviewMaximized, setIsPreviewMaximized] = useState(false);
-  const [annotations, setAnnotations] = useState<Annotation[]>(() => {
-    const saved = localStorage.getItem('petition_feedback');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
 
+  // ☁️ Cloud Sync Implementation
   React.useEffect(() => {
-    localStorage.setItem('petition_feedback', JSON.stringify(annotations));
-  }, [annotations]);
+    const fetchAnnotations = async () => {
+      const { data, error } = await supabase
+        .from('annotations')
+        .select('*')
+        .order('created_at', { ascending: true });
 
-  const handleAddAnnotation = (anno: Annotation) => {
-    setAnnotations(prev => [...prev, anno]);
+      if (data) setAnnotations(data.map(item => ({
+        ...item,
+        elementId: item.element_id,
+        pageNum: item.page_num,
+        isResolved: item.is_resolved
+      })));
+      if (error) console.error('Error fetching annotations:', error);
+    };
+
+    fetchAnnotations();
+
+    // Subscribe to real-time changes
+    const channel = supabase
+      .channel('annotations_realtime')
+      .on('postgres_changes', { event: '*', table: 'annotations' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          const newAnno = payload.new as any;
+          setAnnotations(prev => [...prev, {
+            ...newAnno,
+            elementId: newAnno.element_id,
+            pageNum: newAnno.page_num,
+            isResolved: newAnno.is_resolved
+          }]);
+        } else if (payload.eventType === 'UPDATE') {
+          const updated = payload.new as any;
+          setAnnotations(prev => prev.map(a => a.id === updated.id ? {
+            ...updated,
+            elementId: updated.element_id,
+            pageNum: updated.page_num,
+            isResolved: updated.is_resolved
+          } : a));
+        } else if (payload.eventType === 'DELETE') {
+          setAnnotations(prev => prev.filter(a => a.id !== payload.old.id));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleAddAnnotation = async (anno: Annotation) => {
+    const { error } = await supabase.from('annotations').insert({
+      id: anno.id,
+      element_id: anno.elementId,
+      text: anno.text,
+      author: anno.author,
+      x: anno.x,
+      y: anno.y,
+      page_num: anno.pageNum,
+      is_resolved: false,
+      replies: []
+    });
+    if (error) console.error('Error saving annotation:', error);
   };
 
-  const removeAnnotation = (id: string) => {
-    setAnnotations(prev => prev.filter(a => a.id !== id));
+  const removeAnnotation = async (id: string) => {
+    const { error } = await supabase.from('annotations').delete().eq('id', id);
+    if (error) console.error('Error deleting annotation:', error);
   };
 
-  const editAnnotation = (id: string) => {
+  const editAnnotation = async (id: string) => {
     const anno = annotations.find(a => a.id === id);
     if (!anno) return;
     const newText = prompt("Edit comment:", anno.text);
-    if (newText !== null) {
-      setAnnotations(prev => prev.map(a => a.id === id ? { ...a, text: newText } : a));
+    if (newText && newText !== anno.text) {
+      const { error } = await supabase.from('annotations').update({ text: newText }).eq('id', id);
+      if (error) console.error('Error editing annotation:', error);
     }
   };
 
-  const addReply = (id: string) => {
-    const author = prompt("Enter your name:", "Advocate Partner") || "Anonymous";
-    const text = prompt("Enter your reply:");
+  const addReply = async (id: string) => {
+    const anno = annotations.find(a => a.id === id);
+    if (!anno) return;
+    const author = prompt("Your name:", "Advocate Partner") || "Anonymous";
+    const text = prompt("Enter reply:");
     if (text) {
-      setAnnotations(prev => prev.map(a => {
-        if (a.id === id) {
-          const newReply = {
-            id: Math.random().toString(36).substr(2, 9),
-            author,
-            text,
-            timestamp: new Date().toLocaleTimeString()
-          };
-          return { ...a, replies: [...(a.replies || []), newReply] };
-        }
-        return a;
-      }));
+      const newReply: Reply = {
+        id: Math.random().toString(36).substr(2, 9),
+        author,
+        text,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      const updatedReplies = [...(anno.replies || []), newReply];
+      const { error } = await supabase.from('annotations').update({ replies: updatedReplies }).eq('id', id);
+      if (error) console.error('Error adding reply:', error);
     }
   };
 
-  const toggleResolve = (id: string) => {
-    setAnnotations(prev => prev.map(a => a.id === id ? { ...a, isResolved: !a.isResolved } : a));
+  const toggleResolve = async (id: string) => {
+    const anno = annotations.find(a => a.id === id);
+    if (!anno) return;
+    const { error } = await supabase.from('annotations').update({ is_resolved: !anno.isResolved }).eq('id', id);
+    if (error) console.error('Error toggling resolve:', error);
   };
 
   const exportFeedback = () => {
