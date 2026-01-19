@@ -145,4 +145,8 @@ export interface WritFormData {
 
   // Proof of Service
   proofOfServiceUploads: string[];
+
+  // Form Config
+  includeListingProforma: boolean;
+  includeCertificate: boolean;
 }

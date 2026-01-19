@@ -64,6 +64,8 @@ const INITIAL_DATA: WritFormData = {
   affidavitLocation: 'New Delhi',
   verificationDate: '',
   proofOfServiceUploads: [],
+  includeListingProforma: false,
+  includeCertificate: false,
 };
 
 export default function App() {
@@ -99,7 +101,7 @@ export default function App() {
     // Subscribe to real-time changes
     const channel = supabase
       .channel('annotations_realtime')
-      .on('postgres_changes', { event: '*', table: 'annotations' }, (payload) => {
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'annotations' }, (payload) => {
         if (payload.eventType === 'INSERT') {
           const newAnno = payload.new as any;
           setAnnotations(prev => [...prev, {
@@ -292,6 +294,21 @@ export default function App() {
                   <TextInput label="Year" value={formData.year} onChange={v => updateField('year', v)} {...gf('Year')} />
                   <TextInput label="Filing Location" value={formData.location} onChange={v => updateField('location', v)} {...gf('Filing Location')} />
                   <TextInput label="Filing Date" value={formData.filingDate} onChange={v => updateField('filingDate', v)} {...gf('Filing Date')} />
+                </div>
+
+                <div className="mt-6 flex flex-wrap gap-4">
+                  <button
+                    onClick={() => updateField('includeListingProforma', !formData.includeListingProforma)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${formData.includeListingProforma ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <FileText className="w-4 h-4" /> {formData.includeListingProforma ? 'PROFORMA: INCLUDED' : 'PROFORMA: EXCLUDED'}
+                  </button>
+                  <button
+                    onClick={() => updateField('includeCertificate', !formData.includeCertificate)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${formData.includeCertificate ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <CheckCircle className="w-4 h-4" /> {formData.includeCertificate ? 'CERTIFICATE: INCLUDED' : 'CERTIFICATE: EXCLUDED'}
+                  </button>
                 </div>
 
                 <RepeatableBlock title="Petitioners" onAdd={() => updateField('petitioners', [...formData.petitioners, { id: Date.now().toString(), name: '', addresses: [''], city: '', pin: '', state: '', authRep: '' }])}>

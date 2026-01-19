@@ -122,13 +122,18 @@ export const TextInput = memo(({
         </div>
       </div>
       {multiline ? (
-        <textarea
-          rows={5}
-          className={inputClass}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-        />
+        <div className="relative group">
+          <textarea
+            rows={5}
+            className={inputClass}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+          />
+          <div className="absolute bottom-2 right-2 flex gap-2 opacity-10 group-focus-within:opacity-100 transition-opacity pointer-events-none">
+            <span className="text-[10px] font-black text-gray-400 bg-white/80 px-1 rounded border border-gray-100 italic">Formatting: **bold** *italic*</span>
+          </div>
+        </div>
       ) : (
         <input
           type={type}

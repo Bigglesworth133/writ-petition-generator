@@ -41,7 +41,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     }
   };
 
-  const Page = ({ children, className = "", pageNum, actualPageNum, key }: { children: React.ReactNode, className?: string, pageNum?: number, actualPageNum: number, key?: React.Key }) => (
+  const Page = ({ children, className = "", pageNum, actualPageNum, key }: { children: React.ReactNode, className?: string, pageNum?: number | string, actualPageNum: number, key?: React.Key }) => (
     <div
       onClick={(e) => handlePageClick(e, actualPageNum)}
       key={key}
@@ -88,26 +88,35 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
   );
   // Auto-indexing logic with dynamic page length estimation
   const indexItems = useMemo(() => {
-    let p = 2; // Index is Page 1, so first item starts at Page 2
+    let p = 1; // Start at Page 1 (Index)
     const items = [];
 
-    // 1. Urgent Application
+    // 1. Listing Proforma (if enabled, it comes before Index)
+    if (data.includeListingProforma) {
+      items.push({ title: 'LISTING PROFORMA', p: 'A-1' }); // Usually A-series or Roman
+    }
+
+    // 2. Index (Always Page 1)
+    items.push({ title: 'INDEX', p: p++ });
+
+    // 3. Urgent Application
     items.push({ title: 'URGENT APPLICATION', p: p++ });
 
-    // 2. Certificate
-    items.push({ title: 'CERTIFICATE', p: p++ });
+    // 4. Certificate
+    if (data.includeCertificate) {
+      items.push({ title: 'CERTIFICATE', p: p++ });
+    }
 
-    // 3. Notice of Motion
+    // 5. Notice of Motion
     items.push({ title: 'NOTICE OF MOTION', p: p++ });
 
-    // 4. Court Fees
+    // 6. Court Fees
     items.push({ title: 'COURT FEES', p: p++ });
 
-    // 5. Memo of Parties
+    // 7. Memo of Parties
     items.push({ title: 'MEMO OF PARTIES', p: p++ });
 
-    // 6. Synopsis and List of Dates
-    // Refined estimate: Pre-synopsis + Synopsis + List of Dates (~12 entries per page)
+    // 8. Synopsis and List of Dates
     const contentChars = (data.preSynopsisContent?.length || 0) + (data.synopsisContent?.length || 0);
     const contentPages = Math.max(1, Math.ceil(contentChars / 2000));
     const listPages = Math.max(1, Math.ceil(data.dateList.length / 12));
@@ -115,43 +124,42 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     items.push({ title: 'SYNOPSIS AND LIST OF DATES', p: synopsisPages > 1 ? `${p}-${p + synopsisPages - 1}` : p });
     p += synopsisPages;
 
-    // 7. Writ Petition
-    // Refined estimate: Facts (~2000 chars/pg) + Grounds (~3/pg) + Prayers (1pg)
+    // 9. Writ Petition
     const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 2000));
     const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 3));
     const petitionPages = factsPages + groundsPages + 1;
     items.push({ title: 'WRIT PETITION', p: `${p}-${p + petitionPages - 1}` });
     p += petitionPages;
 
-    // 8. Affidavit
+    // 10. Affidavit
     items.push({ title: 'AFFIDAVIT', p: p++ });
 
-    // 9. Annexures
+    // 11. Annexures
     data.annexures.forEach((ann, idx) => {
       items.push({ title: `ANNEXURE ${getAnnexureTitle(idx)}: A TRUE COPY OF ${ann.title}`, p: p });
       p += 1;
     });
 
-    // 10. Applications
+    // 12. Applications
     data.applications.forEach((app) => {
       const appPages = 2; // Application + Affidavit
       items.push({ title: `MISC. APPL.: ${app.description}`, p: `${p}-${p + appPages - 1}` });
       p += appPages;
     });
 
-    // 11. Letter of Authority
+    // 13. Letter of Authority
     if (data.letterOfAuthorityUpload) {
       items.push({ title: 'LETTER OF AUTHORITY', p: p++ });
     }
 
-    // 12. Vakalatnama
+    // 14. Vakalatnama
     items.push({ title: 'VAKALATNAMA', p: p++ });
 
-    // 13. Proof of Service
+    // 15. Proof of Service
     if (data.proofOfServiceUploads.length > 0) items.push({ title: 'PROOF OF SERVICE', p: p++ });
 
     return items;
-  }, [data.annexures, data.applications, data.proofOfServiceUploads, data.letterOfAuthorityUpload, data.year, data.synopsisContent, data.preSynopsisContent, data.petitionFacts, data.petitionGrounds, data.dateList]);
+  }, [data.annexures, data.applications, data.proofOfServiceUploads, data.letterOfAuthorityUpload, data.year, data.synopsisContent, data.preSynopsisContent, data.petitionFacts, data.petitionGrounds, data.dateList, data.includeListingProforma, data.includeCertificate]);
 
 
   const getGroundsAlpha = (index: number) => {
@@ -195,17 +203,19 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         <p>{getWpShorthand()} NO. _______ OF {data.year}</p>
         {data.petitionType === 'Criminal' && <p>AND<br />CRL.M.A. NO. ______ OF {data.year}</p>}
       </div>
-      <div className="mb-4">
-        <p>IN THE MATTER OF:</p>
-        <div className="flex justify-between items-start px-10 mt-2">
-          <div className="w-[45%] text-left">
-            <p>{getCauseTitle().pText}</p>
-            <p className="italic mt-1">... PETITIONER(S)</p>
+      <div className="mb-4 text-sm">
+        <p className="mb-4 font-normal">IN THE MATTER OF:</p>
+        <div className="space-y-6">
+          <div className="px-10">
+            <p className="font-black text-base">{getCauseTitle().pText}</p>
+            <p className="italic text-xs mt-1">... PETITIONER(S)</p>
           </div>
-          <div className="w-[10%] text-center italic font-normal text-sm lowercase">Versus</div>
-          <div className="w-[45%] text-right">
-            <p>{getCauseTitle().rText}</p>
-            <p className="italic mt-1">... RESPONDENT(S)</p>
+
+          <div className="font-normal italic text-sm lowercase">Versus</div>
+
+          <div className="px-10">
+            <p className="font-black text-base">{getCauseTitle().rText}</p>
+            <p className="italic text-xs mt-1">... RESPONDENT(S)</p>
           </div>
         </div>
       </div>
@@ -231,62 +241,79 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     </div>
   );
 
+  const FormattedText = ({ text }: { text: string }) => {
+    if (!text) return null;
+    const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+    return (
+      <>
+        {parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={i}>{part.slice(2, -2)}</strong>;
+          }
+          if (part.startsWith('*') && part.endsWith('*')) {
+            return <em key={i}>{part.slice(1, -1)}</em>;
+          }
+          return part;
+        })}
+      </>
+    );
+  };
+
   let p = 0;
   let ap = 0;
 
   return (
-    <div className="print:bg-white bg-gray-200 py-10 print:p-0">
-      {/* 0. LISTING PROFORMA */}
-      <Page pageNum={undefined} actualPageNum={++ap}>
-        <div className="text-center font-bold underline mb-10 uppercase text-lg">Listing Proforma</div>
-        <table className="w-full border-collapse border border-black text-sm">
-          <tbody>
-            <tr className="border border-black">
-              <td className="border border-black p-4 font-bold w-1/3">1. CASE TYPE</td>
-              <td className="border border-black p-4 uppercase">Writ Petition ({data.petitionType})</td>
-            </tr>
-            <tr className="border border-black">
-              <td className="border border-black p-4 font-bold">2. CASE NUMBER</td>
-              <td className="border border-black p-4 uppercase">{getWpShorthand()} NO. _______ OF {data.year}</td>
-            </tr>
-            <tr className="border border-black">
-              <td className="border border-black p-4 font-bold">3. PETITIONER(S)</td>
-              <td className="border border-black p-4 uppercase">{data.petitioners.map(pet => pet.name).join(", ")}</td>
-            </tr>
-            <tr className="border border-black">
-              <td className="border border-black p-4 font-bold">4. RESPONDENT(S)</td>
-              <td className="border border-black p-4 uppercase">{data.respondents.map(r => r.name).join(", ")}</td>
-            </tr>
-            <tr className="border border-black">
-              <td className="border border-black p-4 font-bold">5. DATE OF FILING</td>
-              <td className="border border-black p-4 font-bold">{data.filingDate}</td>
-            </tr>
-            <tr className="border border-black">
-              <td className="border border-black p-4 font-bold">6. PROVISION OF LAW</td>
-              <td className="border border-black p-4 font-bold">ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA</td>
-            </tr>
-            <tr className="border border-black">
-              <td className="border border-black p-4 font-bold">7. COURT FEE</td>
-              <td className="border border-black p-4 font-bold">INR {data.courtFeeAmount} /-</td>
-            </tr>
-          </tbody>
-        </table>
-        <div className="mt-20 flex justify-between px-10">
-          <div className="text-center font-bold border-t border-black pt-2 px-6 uppercase text-xs">Petitioner(s) Signature</div>
-          <div className="text-center font-bold border-t border-black pt-2 px-6 uppercase text-xs">Advocate(s) Signature</div>
-        </div>
-      </Page>
+    <div className="flex flex-col items-center gap-12 pb-20 no-print" id="document-preview">
+      {/* 0. LISTING PROFORMA (Conditional) */}
+      {data.includeListingProforma && (
+        <Page pageNum="A-1" actualPageNum={++ap}>
+          <div className="text-center font-bold underline mb-10 uppercase text-lg">Listing Proforma</div>
+          <table className="w-full border-collapse border border-black text-sm uppercase text-justify">
+            <tbody>
+              <tr className="border border-black">
+                <td className="border border-black p-4 font-bold w-1/3">1. COURT</td>
+                <td className="border border-black p-4">{data.highCourt || HIGH_COURT_DEFAULT}</td>
+              </tr>
+              <tr className="border border-black">
+                <td className="border border-black p-4 font-bold">2. CASE NUMBER</td>
+                <td className="border border-black p-4">{getWpShorthand()} NO. _______ OF {data.year}</td>
+              </tr>
+              <tr className="border border-black">
+                <td className="border border-black p-4 font-bold">3. PETITIONER(S)</td>
+                <td className="border border-black p-4">{getCauseTitle().pText}</td>
+              </tr>
+              <tr className="border border-black">
+                <td className="border border-black p-4 font-bold">4. RESPONDENT(S)</td>
+                <td className="border border-black p-4">{getCauseTitle().rText}</td>
+              </tr>
+              <tr className="border border-black">
+                <td className="border border-black p-4 font-bold">5. DATE OF FILING</td>
+                <td className="border border-black p-4 underline">{data.filingDate}</td>
+              </tr>
+              <tr className="border border-black">
+                <td className="border border-black p-4 font-bold">6. JURISDICTION</td>
+                <td className="border border-black p-4">{data.jurisdiction || JURISDICTION_DEFAULT}</td>
+              </tr>
+              <tr className="border border-black">
+                <td className="border border-black p-4 font-bold">7. COURT FEE PAID</td>
+                <td className="border border-black p-4">RS. {data.courtFeeAmount} /-</td>
+              </tr>
+            </tbody>
+          </table>
+          <Signature />
+        </Page>
+      )}
 
       {/* 1. INDEX */}
       <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
-        <div className="text-center font-bold underline mb-6">INDEX</div>
-        <table className="w-full border-collapse border border-black">
+        <div className="text-center font-bold underline mb-10 mt-10 uppercase text-xl">Index</div>
+        <table className="w-full border-collapse border border-black text-sm uppercase">
           <thead>
-            <tr className="border border-black font-bold">
-              <th className="border border-black p-2 text-center w-12">S.NO.</th>
-              <th className="border border-black p-2 text-left">PARTICULARS</th>
-              <th className="border border-black p-2 text-center w-24">PAGE NO.</th>
+            <tr className="border border-black bg-gray-50">
+              <th className="border border-black p-2 font-bold w-16 text-center">S.NO</th>
+              <th className="border border-black p-2 font-bold text-left">DESCRIPTION</th>
+              <th className="border border-black p-2 font-bold w-32 text-center">PAGENO</th>
             </tr>
           </thead>
           <tbody>
@@ -301,11 +328,11 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         </table>
 
         {data.notes && data.notes.length > 0 && (
-          <div className="mt-8">
-            <div className="font-bold underline mb-2">NOTES:</div>
-            <ol className="list-decimal ml-6">
+          <div className="mt-8 text-sm">
+            <div className="font-bold underline mb-2 uppercase">Notes:</div>
+            <ol className="list-decimal ml-6 space-y-2">
               {data.notes.map((note) => (
-                <li key={note.id} className="mb-2">{note.text}</li>
+                <li key={note.id} className="text-justify"><FormattedText text={note.text} /></li>
               ))}
             </ol>
           </div>
@@ -314,20 +341,30 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         <Signature />
       </Page>
 
-      {/* 2. URGENT APPLICATION & CERTIFICATE */}
+      {/* 2. URGENT APPLICATION */}
       <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
-        <div className="text-center font-bold underline mb-10 uppercase">Urgent Application</div>
+        <div className="text-center font-bold underline mb-10 uppercase text-xl">Urgent Application</div>
         <p className="mb-4">To,</p>
-        <p className="mb-4 font-bold">The Registrar,<br />High Court of Delhi,<br />New Delhi - {data.urgentPinCode}</p>
+        <p className="mb-4 font-bold uppercase">The Registrar,<br />{data.highCourt || HIGH_COURT_DEFAULT},<br />{data.location || "NEW DELHI"} - {data.urgentPinCode}</p>
         <p className="mb-10 font-bold italic">Sub: Application for urgent listing of the captioned writ petition.</p>
-        <div className="whitespace-pre-wrap mb-10">{data.urgentContent}</div>
-        <Signature />
-        <div className="mt-20 border-t-2 border-dashed pt-10">
-          <div className="text-center font-bold underline mb-6 uppercase">Certificate</div>
-          <p className="whitespace-pre-wrap">{data.certificateContent}</p>
+        <div className="whitespace-pre-wrap mb-10 text-justify leading-relaxed">
+          <FormattedText text={data.urgentContent} />
         </div>
+        <Signature />
       </Page>
+
+      {/* 2A. CERTIFICATE (Conditional) */}
+      {data.includeCertificate && (
+        <Page pageNum={++p} actualPageNum={++ap}>
+          <Header />
+          <div className="text-center font-bold underline mb-10 uppercase text-xl">Certificate</div>
+          <p className="whitespace-pre-wrap text-justify leading-relaxed">
+            <FormattedText text={data.certificateContent} />
+          </p>
+          <Signature />
+        </Page>
+      )}
 
       {/* 3. NOTICE OF MOTION */}
       <Page pageNum={++p} actualPageNum={++ap}>
@@ -396,7 +433,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         )}
 
         <div className="whitespace-pre-wrap mb-10 text-justify">
-          {data.synopsisContent}
+          <FormattedText text={data.synopsisContent} />
         </div>
         <div className="text-center font-bold underline mb-6 uppercase">List of Dates</div>
         <table className="w-full border-collapse border border-black">
@@ -410,7 +447,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             {data.dateList.map((d, i) => (
               <tr key={i} className="border border-black">
                 <td className="border border-black p-2 align-top">{d.dates.join(", ")}</td>
-                <td className="border border-black p-2">{d.event}</td>
+                <td className="border border-black p-2"><FormattedText text={d.event} /></td>
               </tr>
             ))}
           </tbody>
@@ -429,8 +466,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
           <p className="mb-4">1. The present Writ Petition is being filed by the Petitioner seeking the kind indulgence of this Hon'ble Court under its Extraordinary Writ Jurisdiction to address the grievances of the Petitioner regarding...</p>
           {data.petitionShoweth}
         </div>
-        <div className="font-bold underline mb-4">FACTS:</div>
-        <div className="whitespace-pre-wrap mb-10">{data.petitionFacts}</div>
+        <div className="whitespace-pre-wrap mb-10 text-justify"><FormattedText text={data.petitionFacts} /></div>
 
         <div className="mb-10 indent-10 italic text-justify" style={{ fontSize: '12pt', lineHeight: '1.2' }}>
           2. The Petitioner states that they have no other alternate, efficacious and speedy remedy available against the impugned action/order other than the invocation of the Extraordinary Writ Jurisdiction of this Hon'ble Court.
@@ -442,8 +478,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             <div key={idx} className="flex gap-4">
               <span className="font-bold">GROUND {getGroundsAlpha(idx)}:</span>
               <div className="flex-1">
-                <span className="font-bold italic">Because </span>
-                {ground}
+                <FormattedText text={ground} />
               </div>
             </div>
           ))}
@@ -456,7 +491,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         <div className="space-y-4 mb-10">
           <div className="flex gap-4 pl-10">
             <span>(a)</span>
-            <div className="flex-1">{data.petitionPrayers || "Issue an appropriate writ, order or direction..."}</div>
+            <div className="flex-1"><FormattedText text={data.petitionPrayers || "Issue an appropriate writ, order or direction..."} /></div>
           </div>
           <div className="flex gap-4 pl-10">
             <span>(b)</span>
@@ -535,10 +570,9 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             <div className="text-center font-bold underline mb-10 uppercase text-lg">
               APPLICATION UNDER SECTION 151 OF CPC FOR {app.description.toUpperCase()}
             </div>
-            <div className="font-bold mb-6 uppercase">Most Respectfully Showeth:</div>
-            <div className="whitespace-pre-wrap mb-10">{app.showethContent}</div>
+            <div className="whitespace-pre-wrap mb-10"><FormattedText text={app.showethContent} /></div>
             <div className="font-bold underline mb-6 uppercase">Prayer:</div>
-            <div className="whitespace-pre-wrap mb-10">{app.prayerContent}</div>
+            <div className="whitespace-pre-wrap mb-10"><FormattedText text={app.prayerContent} /></div>
             <Signature />
           </Page>
 
@@ -579,8 +613,14 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       {/* 10. VAKALATNAMA */}
       <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
-        <div className="text-center font-bold underline mb-20 uppercase text-lg">Vakalatnama</div>
-        <div className="grid grid-cols-2 gap-10 mt-20">
+        <div className="text-center font-bold underline mb-10 uppercase text-lg">Vakalatnama</div>
+
+        <div className="border border-black p-4 mb-4 text-xs font-bold uppercase">
+          <p>CASE: {getCauseTitle().pText} VS {getCauseTitle().rText}</p>
+          <p>{getWpShorthand()} NO. _______ OF {data.year}</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-10">
           <div className="border border-black p-10 h-64 flex flex-col justify-between">
             <p className="font-bold underline text-center uppercase">Advocate(s) Signature</p>
             <div>
