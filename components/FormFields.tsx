@@ -97,7 +97,8 @@ export const TextInput = memo(({
 
   // Convert Markdown to HTML for Quill
   const initialHtml = useMemo(() => {
-    return value
+    const safeValue = value || '';
+    return safeValue
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/\n/g, '<br>');
@@ -105,7 +106,9 @@ export const TextInput = memo(({
 
   // Convert HTML back to Markdown for the data model
   const toMD = (html: string) => {
-    return html
+    if (!html) return '';
+    const cleanHtml = DOMPurify.sanitize(html);
+    return cleanHtml
       .replace(/<strong[^>]*>(.*?)<\/strong>/g, '**$1**')
       .replace(/<b[^>]*>(.*?)<\/b>/g, '**$1**')
       .replace(/<em[^>]*>(.*?)<\/em>/g, '*$1*')
@@ -118,7 +121,7 @@ export const TextInput = memo(({
       .trim();
   };
 
-  const quillModules = {
+  const quillModules = useMemo(() => ({
     toolbar: [
       ['bold', 'italic'],
     ],
@@ -136,7 +139,7 @@ export const TextInput = memo(({
         }
       }
     }
-  };
+  }), []);
 
   return (
     <div className="mb-5 relative group">
