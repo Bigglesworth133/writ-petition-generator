@@ -1,6 +1,8 @@
 
-import React, { memo, useState, useRef } from 'react';
+import React, { memo, useState, useRef, useMemo } from 'react';
 import { MessageSquare, Trash2, Edit, CheckCircle2, CornerUpRight, ChevronDown, CheckCircle, Bold, Italic } from 'lucide-react';
+import ReactQuill from 'react-quill-new';
+import DOMPurify from 'dompurify';
 
 interface InputProps {
   label: string;
@@ -91,36 +93,47 @@ export const TextInput = memo(({
   annotations
 }: InputProps) => {
   const inputClass = "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 bg-white text-black text-base placeholder-gray-400";
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<any>(null);
 
-  const handleFormat = (type: 'bold' | 'italic') => {
-    if (!textareaRef.current) return;
-    const { selectionStart, selectionEnd } = textareaRef.current;
-    const selectedText = value.substring(selectionStart, selectionEnd);
-    const prefix = type === 'bold' ? '**' : '*';
-    const formatted = `${prefix}${selectedText}${prefix}`;
-    const newValue = value.substring(0, selectionStart) + formatted + value.substring(selectionEnd);
+  // Convert Markdown to HTML for Quill
+  const initialHtml = useMemo(() => {
+    return value
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
+  }, []); // Initial load only
 
-    onChange(newValue);
-
-    // Restore focus and selection
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-        const newPos = selectionStart + prefix.length + selectedText.length + prefix.length;
-        textareaRef.current.setSelectionRange(newPos, newPos);
-      }
-    }, 0);
+  // Convert HTML back to Markdown for the data model
+  const toMD = (html: string) => {
+    return html
+      .replace(/<strong[^>]*>(.*?)<\/strong>/g, '**$1**')
+      .replace(/<b[^>]*>(.*?)<\/b>/g, '**$1**')
+      .replace(/<em[^>]*>(.*?)<\/em>/g, '*$1*')
+      .replace(/<i[^>]*>(.*?)<\/i>/g, '*$1*')
+      .replace(/<br[^>]*>/g, '\n')
+      .replace(/<p[^>]*>/g, '')
+      .replace(/<\/p>/g, '\n')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/<[^>]+>/g, '')
+      .trim();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      if (e.key === 'b') {
-        e.preventDefault();
-        handleFormat('bold');
-      } else if (e.key === 'i') {
-        e.preventDefault();
-        handleFormat('italic');
+  const quillModules = {
+    toolbar: [
+      ['bold', 'italic'],
+    ],
+    keyboard: {
+      bindings: {
+        bold: {
+          key: 'B',
+          shortKey: true,
+          handler: function () { this.quill.format('bold', !this.quill.getFormat().bold); }
+        },
+        italic: {
+          key: 'I',
+          shortKey: true,
+          handler: function () { this.quill.format('italic', !this.quill.getFormat().italic); }
+        }
       }
     }
   };
@@ -155,32 +168,34 @@ export const TextInput = memo(({
         </div>
       </div>
       {multiline ? (
-        <div className="relative group">
-          <div className="flex gap-1 mb-2">
-            <button
-              type="button"
-              onClick={() => handleFormat('bold')}
-              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-black transition-colors border border-transparent hover:border-gray-200 shadow-sm flex items-center gap-1 text-[10px] font-black uppercase"
-              title="Bold (Ctrl+B)"
-            >
-              <Bold className="w-3 h-3" /> Bold
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFormat('italic')}
-              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-black transition-colors border border-transparent hover:border-gray-200 shadow-sm flex items-center gap-1 text-[10px] font-black uppercase italic"
-              title="Italic (Ctrl+I)"
-            >
-              <Italic className="w-3 h-3" /> Italic
-            </button>
-          </div>
-          <textarea
-            ref={textareaRef}
-            rows={5}
-            className={inputClass}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
+        <div className="relative rich-text-field">
+          <style>{`
+            .rich-text-field .ql-container {
+              font-family: 'Inter', sans-serif !important;
+              font-size: 1rem !important;
+              border-bottom-left-radius: 0.5rem;
+              border-bottom-right-radius: 0.5rem;
+              background: white;
+            }
+            .rich-text-field .ql-toolbar {
+              border-top-left-radius: 0.5rem;
+              border-top-right-radius: 0.5rem;
+              background: #f9fafb;
+              border-bottom: none;
+            }
+            .rich-text-field .ql-editor {
+              min-height: 150px;
+            }
+            .rich-text-field .ql-editor.ql-blank::before {
+              color: #9ca3af !important;
+              font-style: normal !important;
+            }
+          `}</style>
+          <ReactQuill
+            theme="snow"
+            value={initialHtml}
+            onChange={(content) => onChange(toMD(content))}
+            modules={quillModules}
             placeholder={placeholder}
           />
         </div>
