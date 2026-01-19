@@ -107,16 +107,19 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     items.push({ title: 'MEMO OF PARTIES', p: p++ });
 
     // 6. Synopsis and List of Dates
-    // Basic estimate: 2 pages for content + 1 for List of Dates
-    const synopsisPages = Math.max(1, Math.ceil((data.synopsisContent?.length || 0) / 2500)) + 1;
+    // Refined estimate: Pre-synopsis + Synopsis + List of Dates (~12 entries per page)
+    const contentChars = (data.preSynopsisContent?.length || 0) + (data.synopsisContent?.length || 0);
+    const contentPages = Math.max(1, Math.ceil(contentChars / 2000));
+    const listPages = Math.max(1, Math.ceil(data.dateList.length / 12));
+    const synopsisPages = contentPages + listPages;
     items.push({ title: 'SYNOPSIS AND LIST OF DATES', p: synopsisPages > 1 ? `${p}-${p + synopsisPages - 1}` : p });
     p += synopsisPages;
 
     // 7. Writ Petition
-    // Basic estimate: Facts + Grounds (~3 grounds per page) + Prayers
-    const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 2500));
-    const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 4));
-    const petitionPages = factsPages + groundsPages + 1; // +1 for prayer/sig page
+    // Refined estimate: Facts (~2000 chars/pg) + Grounds (~3/pg) + Prayers (1pg)
+    const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 2000));
+    const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 3));
+    const petitionPages = factsPages + groundsPages + 1;
     items.push({ title: 'WRIT PETITION', p: `${p}-${p + petitionPages - 1}` });
     p += petitionPages;
 
@@ -126,7 +129,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     // 9. Annexures
     data.annexures.forEach((ann, idx) => {
       items.push({ title: `ANNEXURE ${getAnnexureTitle(idx)}: A TRUE COPY OF ${ann.title}`, p: p });
-      p += 1; // Annexure covers are usually 1 page in this generator
+      p += 1;
     });
 
     // 10. Applications
@@ -148,7 +151,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     if (data.proofOfServiceUploads.length > 0) items.push({ title: 'PROOF OF SERVICE', p: p++ });
 
     return items;
-  }, [data.annexures, data.applications, data.proofOfServiceUploads, data.letterOfAuthorityUpload, data.year, data.synopsisContent, data.petitionFacts, data.petitionGrounds]);
+  }, [data.annexures, data.applications, data.proofOfServiceUploads, data.letterOfAuthorityUpload, data.year, data.synopsisContent, data.preSynopsisContent, data.petitionFacts, data.petitionGrounds, data.dateList]);
 
 
   const getGroundsAlpha = (index: number) => {
@@ -180,12 +183,16 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     return { pText, rText };
   };
 
+  const getWpShorthand = () => {
+    return data.petitionType === 'Civil' ? 'W.P.(C)' : 'W.P.(CRL)';
+  };
+
   const Header = () => (
     <div className="text-center font-bold mb-10 uppercase">
       <p>{data.highCourt || HIGH_COURT_DEFAULT}</p>
       <p>{data.jurisdiction || JURISDICTION_DEFAULT}</p>
       <div className="my-4">
-        <p>W.P. ({data.petitionType.charAt(0)}) NO. _______ OF {data.year}</p>
+        <p>{getWpShorthand()} NO. _______ OF {data.year}</p>
         {data.petitionType === 'Criminal' && <p>AND<br />CRL.M.A. NO. ______ OF {data.year}</p>}
       </div>
       <div className="mb-4">
@@ -240,7 +247,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             </tr>
             <tr className="border border-black">
               <td className="border border-black p-4 font-bold">2. CASE NUMBER</td>
-              <td className="border border-black p-4 uppercase">W.P. ({data.petitionType.charAt(0)}) NO. _______ OF {data.year}</td>
+              <td className="border border-black p-4 uppercase">{getWpShorthand()} NO. _______ OF {data.year}</td>
             </tr>
             <tr className="border border-black">
               <td className="border border-black p-4 font-bold">3. PETITIONER(S)</td>
@@ -380,8 +387,17 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold underline mb-4 uppercase">Synopsis</div>
-        <p className="italic font-bold mb-6">{data.synopsisDescription}</p>
-        <div className="whitespace-pre-wrap mb-10">{data.synopsisContent}</div>
+        <p className="italic font-bold mb-6 text-center">{data.synopsisDescription}</p>
+
+        {data.preSynopsisContent && (
+          <div className="whitespace-pre-wrap mb-10 text-justify">
+            {data.preSynopsisContent}
+          </div>
+        )}
+
+        <div className="whitespace-pre-wrap mb-10 text-justify">
+          {data.synopsisContent}
+        </div>
         <div className="text-center font-bold underline mb-6 uppercase">List of Dates</div>
         <table className="w-full border-collapse border border-black">
           <thead>
@@ -514,7 +530,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
               IN THE MATTER OF:<br />
               MISC. APPL. NO. ______ OF {data.year}<br />
               IN<br />
-              W.P. ({data.petitionType.charAt(0)}) NO. _______ OF {data.year}
+              {getWpShorthand()} NO. _______ OF {data.year}
             </div>
             <div className="text-center font-bold underline mb-10 uppercase text-lg">
               APPLICATION UNDER SECTION 151 OF CPC FOR {app.description.toUpperCase()}
@@ -578,8 +594,16 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             <p className="text-right mt-auto font-bold uppercase">Petitioner(s)</p>
           </div>
         </div>
-        <div className="mt-10 p-4 border border-black text-sm text-justify">
-          The Petitioner(s) hereby appoint and authorize the above mentioned Advocate(s) to represent, appear and act on their behalf in the captioned matter.
+        <div className="mt-10 p-4 border border-black text-[10pt] text-justify space-y-4">
+          <p>
+            I/We, the Petitioner(s) in the above-mentioned Case, do hereby appoint and retain the Advocate(s) named above to appear, plead and act for me/us in the above-mentioned Case and in connection therewith, to deposit, receive and take back any and all such monies as may be deposited, received or taken back by me/us and also to file such documents, to make such statements, and to take all such proceedings as may be necessary in the said case at all stages.
+          </p>
+          <p>
+            I/We also authorize the said Advocate(s) to appoint and retain any other Advocate/Counsel or to delegate the above powers to any other Advocate/Counsel to act on my/our behalf as and when necessary.
+          </p>
+          <p>
+            And I/We hereby agree that everything done by the said Advocate(s) or any of them in connection with the said case shall be binding on me/us as if done by me/us in person.
+          </p>
         </div>
         <Signature />
       </Page>

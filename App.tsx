@@ -48,6 +48,7 @@ const INITIAL_DATA: WritFormData = {
   courtFeeAmount: '500',
   courtFeeAttachment: null,
   synopsisDescription: 'WRIT PETITION UNDER ARTICLE 226 & 227...',
+  preSynopsisContent: '',
   synopsisContent: '',
   dateList: [{ id: '1', dates: [''], event: '' }],
   petitionDescriptionMain: 'WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA SEEKING...',
@@ -289,6 +290,8 @@ export default function App() {
                   <TextInput label="Jurisdiction" value={formData.jurisdiction} onChange={v => updateField('jurisdiction', v)} {...gf('Jurisdiction')} />
                   <SelectInput label="Type" value={formData.petitionType} options={[{ label: 'Civil', value: 'Civil' }, { label: 'Criminal', value: 'Criminal' }]} onChange={v => updateField('petitionType', v)} {...gf('Type')} />
                   <TextInput label="Year" value={formData.year} onChange={v => updateField('year', v)} {...gf('Year')} />
+                  <TextInput label="Filing Location" value={formData.location} onChange={v => updateField('location', v)} {...gf('Filing Location')} />
+                  <TextInput label="Filing Date" value={formData.filingDate} onChange={v => updateField('filingDate', v)} {...gf('Filing Date')} />
                 </div>
 
                 <RepeatableBlock title="Petitioners" onAdd={() => updateField('petitioners', [...formData.petitioners, { id: Date.now().toString(), name: '', addresses: [''], city: '', pin: '', state: '', authRep: '' }])}>
@@ -435,7 +438,9 @@ export default function App() {
                 </div>
 
                 <SectionHeader title="Synopsis & List of Dates" />
-                <TextInput label="Synopsis" multiline value={formData.synopsisContent} onChange={v => updateField('synopsisContent', v)} {...gf('Synopsis')} />
+                <TextInput label="Synopsis Header" value={formData.synopsisDescription} onChange={v => updateField('synopsisDescription', v)} {...gf('Synopsis Header')} />
+                <TextInput label="Preliminary Statement (Optional)" multiline value={formData.preSynopsisContent} onChange={v => updateField('preSynopsisContent', v)} {...gf('Pre-Synopsis')} />
+                <TextInput label="Synopsis Content" multiline value={formData.synopsisContent} onChange={v => updateField('synopsisContent', v)} {...gf('Synopsis')} />
                 <RepeatableBlock title="List of Dates" onAdd={() => updateField('dateList', [...formData.dateList, { id: Date.now().toString(), dates: [''], event: '' }])}>
                   {formData.dateList.map((d, i) => (
                     <div key={d.id} className="flex gap-2 items-start bg-white p-3 rounded-xl shadow-sm">

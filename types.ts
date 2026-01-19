@@ -121,6 +121,7 @@ export interface WritFormData {
 
   // Synopsis
   synopsisDescription: string;
+  preSynopsisContent: string;
   synopsisContent: string;
 
   // List of Dates
