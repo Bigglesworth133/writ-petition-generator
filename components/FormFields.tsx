@@ -94,6 +94,11 @@ export const TextInput = memo(({
 }: InputProps) => {
   const inputClass = "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 bg-white text-black text-base placeholder-gray-400";
   const textareaRef = useRef<any>(null);
+  const [isMount, setIsMount] = useState(false);
+
+  React.useEffect(() => {
+    setIsMount(true);
+  }, []);
 
   // Convert Markdown to HTML for Quill
   const initialHtml = useMemo(() => {
@@ -102,7 +107,7 @@ export const TextInput = memo(({
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
       .replace(/\n/g, '<br>');
-  }, []); // Initial load only
+  }, [isMount]); // Re-calculate once after mount
 
   // Convert HTML back to Markdown for the data model
   const toMD = (html: string) => {
@@ -194,13 +199,17 @@ export const TextInput = memo(({
               font-style: normal !important;
             }
           `}</style>
-          <ReactQuill
-            theme="snow"
-            value={initialHtml}
-            onChange={(content) => onChange(toMD(content))}
-            modules={quillModules}
-            placeholder={placeholder}
-          />
+          {isMount ? (
+            <ReactQuill
+              theme="snow"
+              value={initialHtml}
+              onChange={(content) => onChange(toMD(content))}
+              modules={quillModules}
+              placeholder={placeholder}
+            />
+          ) : (
+            <div className="w-full h-[150px] bg-gray-50 animate-pulse rounded-lg border border-gray-200"></div>
+          )}
         </div>
       ) : (
         <input
