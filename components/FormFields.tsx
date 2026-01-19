@@ -1,8 +1,6 @@
 
-import React, { memo, useState, useRef, useMemo } from 'react';
-import { MessageSquare, Trash2, Edit, CheckCircle2, CornerUpRight, ChevronDown, CheckCircle, Bold, Italic } from 'lucide-react';
-import ReactQuill from 'react-quill-new';
-import DOMPurify from 'dompurify';
+import React, { memo, useState } from 'react';
+import { MessageSquare, Trash2, Edit, CheckCircle2, CornerUpRight, ChevronDown, CheckCircle } from 'lucide-react';
 
 interface InputProps {
   label: string;
@@ -93,58 +91,6 @@ export const TextInput = memo(({
   annotations
 }: InputProps) => {
   const inputClass = "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 bg-white text-black text-base placeholder-gray-400";
-  const textareaRef = useRef<any>(null);
-  const [isMount, setIsMount] = useState(false);
-
-  React.useEffect(() => {
-    setIsMount(true);
-  }, []);
-
-  // Convert Markdown to HTML for Quill
-  const initialHtml = useMemo(() => {
-    const safeValue = value || '';
-    return safeValue
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\n/g, '<br>');
-  }, [isMount]); // Re-calculate once after mount
-
-  // Convert HTML back to Markdown for the data model
-  const toMD = (html: string) => {
-    if (!html) return '';
-    const cleanHtml = DOMPurify.sanitize(html);
-    return cleanHtml
-      .replace(/<strong[^>]*>(.*?)<\/strong>/g, '**$1**')
-      .replace(/<b[^>]*>(.*?)<\/b>/g, '**$1**')
-      .replace(/<em[^>]*>(.*?)<\/em>/g, '*$1*')
-      .replace(/<i[^>]*>(.*?)<\/i>/g, '*$1*')
-      .replace(/<br[^>]*>/g, '\n')
-      .replace(/<p[^>]*>/g, '')
-      .replace(/<\/p>/g, '\n')
-      .replace(/&nbsp;/g, ' ')
-      .replace(/<[^>]+>/g, '')
-      .trim();
-  };
-
-  const quillModules = useMemo(() => ({
-    toolbar: [
-      ['bold', 'italic'],
-    ],
-    keyboard: {
-      bindings: {
-        bold: {
-          key: 'B',
-          shortKey: true,
-          handler: function () { this.quill.format('bold', !this.quill.getFormat().bold); }
-        },
-        italic: {
-          key: 'I',
-          shortKey: true,
-          handler: function () { this.quill.format('italic', !this.quill.getFormat().italic); }
-        }
-      }
-    }
-  }), []);
 
   return (
     <div className="mb-5 relative group">
@@ -176,40 +122,17 @@ export const TextInput = memo(({
         </div>
       </div>
       {multiline ? (
-        <div className="relative rich-text-field">
-          <style>{`
-            .rich-text-field .ql-container {
-              font-family: 'Inter', sans-serif !important;
-              font-size: 1rem !important;
-              border-bottom-left-radius: 0.5rem;
-              border-bottom-right-radius: 0.5rem;
-              background: white;
-            }
-            .rich-text-field .ql-toolbar {
-              border-top-left-radius: 0.5rem;
-              border-top-right-radius: 0.5rem;
-              background: #f9fafb;
-              border-bottom: none;
-            }
-            .rich-text-field .ql-editor {
-              min-height: 150px;
-            }
-            .rich-text-field .ql-editor.ql-blank::before {
-              color: #9ca3af !important;
-              font-style: normal !important;
-            }
-          `}</style>
-          {isMount ? (
-            <ReactQuill
-              theme="snow"
-              value={initialHtml}
-              onChange={(content) => onChange(toMD(content))}
-              modules={quillModules}
-              placeholder={placeholder}
-            />
-          ) : (
-            <div className="w-full h-[150px] bg-gray-50 animate-pulse rounded-lg border border-gray-200"></div>
-          )}
+        <div className="relative group">
+          <textarea
+            rows={5}
+            className={inputClass}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+          />
+          <div className="absolute bottom-2 right-2 flex gap-2 opacity-10 group-focus-within:opacity-100 transition-opacity pointer-events-none">
+            <span className="text-[10px] font-black text-gray-400 bg-white/80 px-1 rounded border border-gray-100 italic">Formatting: **bold** *italic*</span>
+          </div>
         </div>
       ) : (
         <input
