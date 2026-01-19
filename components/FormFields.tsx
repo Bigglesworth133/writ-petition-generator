@@ -1,6 +1,6 @@
 
-import React, { memo, useState } from 'react';
-import { MessageSquare, Trash2, Edit, CheckCircle2, CornerUpRight, ChevronDown, CheckCircle } from 'lucide-react';
+import React, { memo, useState, useRef } from 'react';
+import { MessageSquare, Trash2, Edit, CheckCircle2, CornerUpRight, ChevronDown, CheckCircle, Bold, Italic } from 'lucide-react';
 
 interface InputProps {
   label: string;
@@ -91,6 +91,39 @@ export const TextInput = memo(({
   annotations
 }: InputProps) => {
   const inputClass = "w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-200 bg-white text-black text-base placeholder-gray-400";
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleFormat = (type: 'bold' | 'italic') => {
+    if (!textareaRef.current) return;
+    const { selectionStart, selectionEnd } = textareaRef.current;
+    const selectedText = value.substring(selectionStart, selectionEnd);
+    const prefix = type === 'bold' ? '**' : '*';
+    const formatted = `${prefix}${selectedText}${prefix}`;
+    const newValue = value.substring(0, selectionStart) + formatted + value.substring(selectionEnd);
+
+    onChange(newValue);
+
+    // Restore focus and selection
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+        const newPos = selectionStart + prefix.length + selectedText.length + prefix.length;
+        textareaRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'b') {
+        e.preventDefault();
+        handleFormat('bold');
+      } else if (e.key === 'i') {
+        e.preventDefault();
+        handleFormat('italic');
+      }
+    }
+  };
 
   return (
     <div className="mb-5 relative group">
@@ -123,16 +156,33 @@ export const TextInput = memo(({
       </div>
       {multiline ? (
         <div className="relative group">
+          <div className="flex gap-1 mb-2">
+            <button
+              type="button"
+              onClick={() => handleFormat('bold')}
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-black transition-colors border border-transparent hover:border-gray-200 shadow-sm flex items-center gap-1 text-[10px] font-black uppercase"
+              title="Bold (Ctrl+B)"
+            >
+              <Bold className="w-3 h-3" /> Bold
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFormat('italic')}
+              className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-500 hover:text-black transition-colors border border-transparent hover:border-gray-200 shadow-sm flex items-center gap-1 text-[10px] font-black uppercase italic"
+              title="Italic (Ctrl+I)"
+            >
+              <Italic className="w-3 h-3" /> Italic
+            </button>
+          </div>
           <textarea
+            ref={textareaRef}
             rows={5}
             className={inputClass}
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder={placeholder}
           />
-          <div className="absolute bottom-2 right-2 flex gap-2 opacity-10 group-focus-within:opacity-100 transition-opacity pointer-events-none">
-            <span className="text-[10px] font-black text-gray-400 bg-white/80 px-1 rounded border border-gray-100 italic">Formatting: **bold** *italic*</span>
-          </div>
         </div>
       ) : (
         <input
