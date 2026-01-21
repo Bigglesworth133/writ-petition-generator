@@ -84,6 +84,7 @@ export default function App() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [isPreviewMaximized, setIsPreviewMaximized] = useState(false);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   // ☁️ Cloud Sync Implementation
   React.useEffect(() => {
@@ -205,53 +206,12 @@ export default function App() {
   }, []);
 
   const handlePrint = () => {
-    const preview = document.getElementById('document-preview');
-    if (!preview) return;
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      alert("Please allow popups for printing");
-      return;
-    }
-
-    // Capture styles
-    let styles = "";
-    document.querySelectorAll('style, link[rel="stylesheet"]').forEach(tag => {
-      styles += tag.outerHTML;
-    });
-
-    const html = `
-      <html>
-        <head>
-          <title>Writ Petition Print</title>
-          ${styles}
-          <style>
-            body { 
-              background: white !important; 
-              color: black !important;
-              margin: 0 !important;
-              padding: 0 !important;
-            }
-            #document-preview { 
-              display: block !important; 
-              width: 100% !important;
-            }
-            @media print {
-              @page { size: A4; margin: 10mm; }
-              #document-preview { padding: 0 !important; margin: 0 !important; }
-            }
-          </style>
-        </head>
-        <body onload="window.print(); window.close();">
-          <div id="document-preview">
-            ${preview.innerHTML}
-          </div>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(html);
-    printWindow.document.close();
+    setIsPrinting(true);
+    // Give browser time to render the high-priority print layer
+    setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+    }, 1000);
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
@@ -376,7 +336,7 @@ export default function App() {
             <Gavel className="text-blue-600 w-8 h-8" />
             <div>
               <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Writ Petition Pro</h1>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">v3.0 | Final Print Fix</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">v3.1 | Nuclear Print Fix</p>
             </div>
           </div>
 
@@ -822,6 +782,15 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {isPrinting && (
+        <div className="fixed inset-0 bg-white z-[99999] overflow-auto flex flex-col items-center py-10 print-layer">
+          <DocumentPreview
+            data={formData}
+            annotations={annotations}
+          />
+        </div>
+      )}
     </>
   );
 }

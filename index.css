@@ -12,6 +12,21 @@ body {
     .no-print {
         display: none !important;
     }
+
+    .print-layer {
+        display: block !important;
+        visibility: visible !important;
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+        background: white !important;
+        overflow: visible !important;
+    }
+
+    @page {
+        size: A4;
+        margin: 10mm;
+    }
 }
 
 /* Custom scrollbar for pro feel */
