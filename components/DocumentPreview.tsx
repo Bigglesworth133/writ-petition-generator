@@ -51,7 +51,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         {children}
       </div>
       {pageNum !== undefined && (
-        <div className="absolute bottom-8 left-0 right-0 text-center font-bold text-sm no-print-pagination">
+        <div className="absolute top-8 right-12 text-right font-bold text-sm no-print-pagination w-auto bg-white pl-2">
           {pageNum}
         </div>
       )}
@@ -391,6 +391,28 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         </p>
         <p className="mb-10">Sir/Madam,</p>
         <p className="mb-10">Please take notice that the accompanying Writ Petition is likely to be listed before the Hon'ble Court on <span className="font-bold underline">{data.noticeHearingDate || "Next Hearing Date"}</span> or any other date the Hon'ble Court may deem fit.</p>
+        <Signature />
+      </Page>
+
+      {/* 4. COURT FEES (New) */}
+      <Page pageNum={++p} actualPageNum={++ap}>
+        <Header />
+        <div className="text-center font-bold underline mb-10 uppercase text-lg">Court Fees</div>
+        <div className="border-2 border-dashed border-gray-300 h-[400px] flex items-center justify-center text-gray-400 font-bold italic mb-10">
+          [COURT FEE CERTIFICATE / E-RECEIPT TO BE ATTACHED HERE]
+        </div>
+        <table className="w-full border-collapse border border-black text-sm uppercase">
+          <tbody>
+            <tr className="border border-black">
+              <td className="border border-black p-4 font-bold w-1/3">Amount Paid</td>
+              <td className="border border-black p-4">RS. {data.courtFeeAmount} /-</td>
+            </tr>
+            <tr className="border border-black">
+              <td className="border border-black p-4 font-bold">UIN/Reference No.</td>
+              <td className="border border-black p-4">{data.courtFeeUin || "____________________"}</td>
+            </tr>
+          </tbody>
+        </table>
         <Signature />
       </Page>
 

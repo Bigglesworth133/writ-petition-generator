@@ -551,7 +551,7 @@ export default function App() {
                   <SelectInput label="Identity" value={formData.affidavitIdentity} options={[{ label: 'Petitioner', value: 'Petitioner' }, { label: 'Auth Rep', value: 'Authorized Representative' }]} onChange={v => updateField('affidavitIdentity', v)} {...gf('Affidavit Identity')} />
                   <TextInput label="Name" value={formData.affidavitName} onChange={v => updateField('affidavitName', v)} {...gf('Affidavit Name')} />
                   <TextInput label="Age" value={formData.affidavitAge} onChange={v => updateField('affidavitAge', v)} {...gf('Affidavit Age')} />
-                  <TextInput label="Verification Date" value={formData.verificationDate} onChange={v => updateField('verificationDate', v)} {...gf('Verification Date')} />
+                  <TextInput label="Verification Date" value={formData.verificationDate} placeholder="e.g. 21.01.2025" onChange={v => updateField('verificationDate', v)} {...gf('Verification Date')} />
                   <div className="col-span-2"><TextInput label="Address" value={formData.affidavitAddress} onChange={v => updateField('affidavitAddress', v)} {...gf('Affidavit Address')} /></div>
                   <div className="col-span-2"><TextInput label="Present Location" value={formData.affidavitLocation} onChange={v => updateField('affidavitLocation', v)} {...gf('Affidavit Location')} /></div>
                 </div>
