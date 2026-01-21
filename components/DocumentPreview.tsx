@@ -519,9 +519,11 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             </div>
             <div className="font-bold mb-6">MOST RESPECTFULLY SHOWETH:</div>
             <div className="whitespace-pre-wrap mb-10">
-              <p className="mb-4">1. The present Writ Petition is being filed by the Petitioner seeking the kind indulgence of this Hon'ble Court... (Contd.)</p>
+              <p className="mb-4">1. The present Writ Petition is being filed by the Petitioner seeking the kind indulgence of this Hon'ble Court under Article 226/227 of the Constitution of India.</p>
               {data.petitionShoweth}
             </div>
+
+            <div className="font-bold underline mb-4 uppercase">Brief Facts:</div>
             <div className="whitespace-pre-wrap mb-10 text-justify"><FormattedText text={data.petitionFacts} /></div>
 
             {/* Truncated for preview... */}
