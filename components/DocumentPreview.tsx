@@ -118,15 +118,15 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
 
     // 8. Synopsis and List of Dates
     const contentChars = (data.preSynopsisContent?.length || 0) + (data.synopsisContent?.length || 0);
-    const contentPages = Math.max(1, Math.ceil(contentChars / 2000));
-    const listPages = Math.max(1, Math.ceil(data.dateList.length / 12));
+    const contentPages = Math.max(1, Math.ceil(contentChars / 3200));
+    const listPages = Math.max(1, Math.ceil(data.dateList.length / 15));
     const synopsisPages = contentPages + listPages;
     items.push({ title: 'SYNOPSIS AND LIST OF DATES', p: synopsisPages > 1 ? `${p}-${p + synopsisPages - 1}` : p });
     p += synopsisPages;
 
     // 9. Writ Petition
-    const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 2000));
-    const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 3));
+    const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 3200));
+    const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 4));
     const petitionPages = factsPages + groundsPages + 1;
     items.push({ title: 'WRIT PETITION', p: `${p}-${p + petitionPages - 1}` });
     p += petitionPages;
@@ -460,8 +460,8 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       {/* 4. SYNOPSIS & DATES */}
       {(() => {
         const contentChars = (data.preSynopsisContent?.length || 0) + (data.synopsisContent?.length || 0);
-        const contentPages = Math.max(1, Math.ceil(contentChars / 2000));
-        const listPages = Math.max(1, Math.ceil(data.dateList.length / 12));
+        const contentPages = Math.max(1, Math.ceil(contentChars / 3200));
+        const listPages = Math.max(1, Math.ceil(data.dateList.length / 15));
         const synopsisPages = contentPages + listPages;
         const pageLabel = renderPagination(synopsisPages);
 
@@ -506,8 +506,8 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
 
       {/* 5. MAIN PETITION */}
       {(() => {
-        const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 2000));
-        const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 3));
+        const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 3200));
+        const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 4));
         const petitionPages = factsPages + groundsPages + 1;
         const pageLabel = renderPagination(petitionPages);
 
