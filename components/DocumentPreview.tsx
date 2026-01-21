@@ -136,8 +136,10 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
 
     // 11. Annexures
     data.annexures.forEach((ann, idx) => {
-      items.push({ title: `ANNEXURE ${getAnnexureTitle(idx)}: A TRUE COPY OF ${ann.title}`, p: p });
-      p += 1;
+      const pageCount = parseInt(ann.pageCount || '1', 10);
+      const pageStr = pageCount > 1 ? `${p}-${p + pageCount - 1}` : p;
+      items.push({ title: `ANNEXURE ${getAnnexureTitle(idx)}: A TRUE COPY OF ${ann.title}`, p: pageStr });
+      p += pageCount;
     });
 
     // 12. Applications
@@ -261,6 +263,15 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
 
   let p = 0;
   let ap = 0;
+
+  // Helper to sync pagination for long sections
+  const renderPagination = (estimatedPages: number) => {
+    const start = p + 1;
+    const end = p + estimatedPages;
+    p += estimatedPages;
+    ap++; // Only 1 DOM page
+    return estimatedPages > 1 ? `${start}-${end}` : start;
+  };
 
   return (
     <div className="flex flex-col items-center gap-12 pb-20 no-print" id="document-preview">
@@ -421,88 +432,97 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       </Page>
 
       {/* 4. SYNOPSIS & DATES */}
-      <Page pageNum={++p} actualPageNum={++ap}>
-        <Header />
-        <div className="text-center font-bold underline mb-4 uppercase">Synopsis</div>
-        <p className="italic font-bold mb-6 text-center">{data.synopsisDescription}</p>
+      {(() => {
+        const contentChars = (data.preSynopsisContent?.length || 0) + (data.synopsisContent?.length || 0);
+        const contentPages = Math.max(1, Math.ceil(contentChars / 2000));
+        const listPages = Math.max(1, Math.ceil(data.dateList.length / 12));
+        const synopsisPages = contentPages + listPages;
+        const pageLabel = renderPagination(synopsisPages);
 
-        {data.preSynopsisContent && (
-          <div className="whitespace-pre-wrap mb-10 text-justify">
-            {data.preSynopsisContent}
-          </div>
-        )}
+        return (
+          <Page pageNum={pageLabel} actualPageNum={ap}>
+            <Header />
+            <div className="text-center font-bold underline mb-4 uppercase">Synopsis</div>
+            <p className="italic font-bold mb-6 text-center">{data.synopsisDescription}</p>
 
-        <div className="whitespace-pre-wrap mb-10 text-justify">
-          <FormattedText text={data.synopsisContent} />
-        </div>
-        <div className="text-center font-bold underline mb-6 uppercase">List of Dates</div>
-        <table className="w-full border-collapse border border-black">
-          <thead>
-            <tr className="border border-black font-bold">
-              <th className="border border-black p-2 text-left w-32">DATE</th>
-              <th className="border border-black p-2 text-left">EVENTS</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.dateList.map((d, i) => (
-              <tr key={i} className="border border-black">
-                <td className="border border-black p-2 align-top">{d.dates.join(", ")}</td>
-                <td className="border border-black p-2"><FormattedText text={d.event} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <Signature />
-      </Page>
+            {data.preSynopsisContent && (
+              <div className="whitespace-pre-wrap mb-10 text-justify">
+                {data.preSynopsisContent}
+              </div>
+            )}
+
+            <div className="whitespace-pre-wrap mb-10 text-justify">
+              <FormattedText text={data.synopsisContent} />
+            </div>
+            <div className="text-center font-bold underline mb-6 uppercase">List of Dates</div>
+            <table className="w-full border-collapse border border-black">
+              <thead>
+                <tr className="border border-black font-bold">
+                  <th className="border border-black p-2 text-left w-32">DATE</th>
+                  <th className="border border-black p-2 text-left">EVENTS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.dateList.map((d, i) => (
+                  <tr key={i} className="border border-black">
+                    <td className="border border-black p-2 align-top">{d.dates.join(", ")}</td>
+                    <td className="border border-black p-2"><FormattedText text={d.event} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Signature />
+          </Page>
+        );
+      })()}
 
       {/* 5. MAIN PETITION */}
-      <Page pageNum={++p} actualPageNum={++ap}>
-        <Header />
-        <div className="text-center font-bold mb-8 text-xl px-10">
-          {data.petitionDescriptionMain || `WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA SEEKING THE ISSUANCE OF A WRIT, ORDER OR DIRECTION IN THE NATURE OF CERTIORARI, MANDAMUS OR ANY OTHER APPROPRIATE WRIT...`}
-        </div>
-        <div className="font-bold mb-6">MOST RESPECTFULLY SHOWETH:</div>
-        <div className="whitespace-pre-wrap mb-10">
-          <p className="mb-4">1. The present Writ Petition is being filed by the Petitioner seeking the kind indulgence of this Hon'ble Court under its Extraordinary Writ Jurisdiction to address the grievances of the Petitioner regarding...</p>
-          {data.petitionShoweth}
-        </div>
-        <div className="whitespace-pre-wrap mb-10 text-justify"><FormattedText text={data.petitionFacts} /></div>
+      {(() => {
+        const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 2000));
+        const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 3));
+        const petitionPages = factsPages + groundsPages + 1;
+        const pageLabel = renderPagination(petitionPages);
 
-        <div className="mb-10 indent-10 italic text-justify" style={{ fontSize: '12pt', lineHeight: '1.2' }}>
-          2. The Petitioner states that they have no other alternate, efficacious and speedy remedy available against the impugned action/order other than the invocation of the Extraordinary Writ Jurisdiction of this Hon'ble Court.
-        </div>
+        return (
+          <Page pageNum={pageLabel} actualPageNum={ap}>
+            <Header />
+            <div className="text-center font-bold mb-8 text-xl px-10">
+              {data.petitionDescriptionMain || `WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA SEEKING THE ISSUANCE OF A WRIT, ORDER OR DIRECTION IN THE NATURE OF CERTIORARI, MANDAMUS OR ANY OTHER APPROPRIATE WRIT...`}
+            </div>
+            <div className="font-bold mb-6">MOST RESPECTFULLY SHOWETH:</div>
+            <div className="whitespace-pre-wrap mb-10">
+              <p className="mb-4">1. The present Writ Petition is being filed by the Petitioner seeking the kind indulgence of this Hon'ble Court... (Contd.)</p>
+              {data.petitionShoweth}
+            </div>
+            <div className="whitespace-pre-wrap mb-10 text-justify"><FormattedText text={data.petitionFacts} /></div>
 
-        <div className="font-bold underline mb-4 uppercase">Grounds:</div>
-        <div className="space-y-6 mb-10">
-          {data.petitionGrounds.split('\n').filter(g => g.trim()).map((ground, idx) => (
-            <div key={idx} className="flex gap-4">
-              <span className="font-bold">GROUND {getGroundsAlpha(idx)}:</span>
-              <div className="flex-1">
-                <FormattedText text={ground} />
+            {/* Truncated for preview... */}
+            <div className="font-bold underline mb-4 uppercase">Grounds:</div>
+            <div className="space-y-6 mb-10">
+              {data.petitionGrounds.split('\n').filter(g => g.trim()).map((ground, idx) => (
+                <div key={idx} className="flex gap-4">
+                  <span className="font-bold">GROUND {getGroundsAlpha(idx)}:</span>
+                  <div className="flex-1">
+                    <FormattedText text={ground} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="font-bold underline mb-6 uppercase">Prayer:</div>
+            <div className="mb-6">
+              IN THE LIGHT OF THE FACTS AND CIRCUMSTANCES STATED HEREIN ABOVE...
+            </div>
+            <div className="space-y-4 mb-10">
+              <div className="flex gap-4 pl-10">
+                <span>(a)</span>
+                <div className="flex-1"><FormattedText text={data.petitionPrayers || "Issue an appropriate writ..."} /></div>
               </div>
             </div>
-          ))}
-        </div>
-
-        <div className="font-bold underline mb-6 uppercase">Prayer:</div>
-        <div className="mb-6">
-          IN THE LIGHT OF THE FACTS AND CIRCUMSTANCES STATED HEREIN ABOVE, IT IS MOST HUMBLY PRAYED THAT THIS HON'BLE COURT MAY BE GRACIOUSLY PLEASED TO:
-        </div>
-        <div className="space-y-4 mb-10">
-          <div className="flex gap-4 pl-10">
-            <span>(a)</span>
-            <div className="flex-1"><FormattedText text={data.petitionPrayers || "Issue an appropriate writ, order or direction..."} /></div>
-          </div>
-          <div className="flex gap-4 pl-10">
-            <span>(b)</span>
-            <div className="flex-1 text-justify">Pass such further orders as this Hon'ble Court may deem fit and proper in the facts and circumstances of the case and in the interest of justice.</div>
-          </div>
-        </div>
-        <div className="text-center font-bold mt-10 space-y-2 uppercase">
-          <p>AND FOR THIS ACT OF KINDNESS THE PETITIONER SHALL REMAIN DUTY BOUND, EVERY PRAY.</p>
-        </div>
-        <Signature />
-      </Page>
+            <Signature />
+          </Page>
+        );
+      })()}
 
       {/* 6. AFFIDAVIT */}
       <Page pageNum={++p} actualPageNum={++ap}>
@@ -541,20 +561,25 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       </Page>
 
       {/* 7. ANNEXURES */}
-      {data.annexures.map((ann, idx) => (
-        <Page key={ann.id} pageNum={++p} actualPageNum={++ap}>
-          <div className="flex justify-between font-bold mb-10 uppercase">
-            <span>Annexure {getAnnexureTitle(idx)}</span>
-          </div>
-          <div className="text-center font-bold underline mb-20 uppercase text-lg">
-            A TRUE COPY OF {ann.title}
-          </div>
-          <div className="border-2 border-dashed border-gray-300 h-[500px] flex items-center justify-center text-gray-400 font-bold italic">
-            [DOCUMENT: {ann.title}]
-          </div>
-          <Signature />
-        </Page>
-      ))}
+      {data.annexures.map((ann, idx) => {
+        const pageCount = parseInt(ann.pageCount || '1', 10);
+        const pageLabel = renderPagination(pageCount);
+
+        return (
+          <Page key={ann.id} pageNum={pageLabel} actualPageNum={ap}>
+            <div className="flex justify-between font-bold mb-10 uppercase">
+              <span>Annexure {getAnnexureTitle(idx)}</span>
+            </div>
+            <div className="text-center font-bold underline mb-20 uppercase text-lg">
+              A TRUE COPY OF {ann.title}
+            </div>
+            <div className="border-2 border-dashed border-gray-300 h-[500px] flex items-center justify-center text-gray-400 font-bold italic">
+              [DOCUMENT: {ann.title} - {pageCount} PAGES]
+            </div>
+            <Signature />
+          </Page>
+        );
+      })}
 
       {/* 8. APPLICATIONS */}
       {data.applications.map((app) => (

@@ -418,11 +418,18 @@ export default function App() {
                 </div>
 
                 <SectionHeader title="Annexures" />
-                <RepeatableBlock title="Annexures" onAdd={() => updateField('annexures', [...formData.annexures, { id: Date.now().toString(), title: '', contentText: '', files: [] }])}>
+                <RepeatableBlock title="Annexures" onAdd={() => updateField('annexures', [...formData.annexures, { id: Date.now().toString(), title: '', pageCount: '1', contentText: '', files: [] }])}>
                   {formData.annexures.map((ann, i) => (
                     <div key={ann.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200 mb-4">
                       <button onClick={() => updateField('annexures', formData.annexures.filter(x => x.id !== ann.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                      <TextInput label={`Annexure #${i + 1} Title`} value={ann.title} onChange={v => { const up = [...formData.annexures]; up[i].title = v; updateField('annexures', up); }} {...gf(`Annexure #${i + 1} Title`)} />
+                      <div className="grid grid-cols-4 gap-4">
+                        <div className="col-span-3">
+                          <TextInput label={`Annexure #${i + 1} Title`} value={ann.title} onChange={v => { const up = [...formData.annexures]; up[i].title = v; updateField('annexures', up); }} {...gf(`Annexure #${i + 1} Title`)} />
+                        </div>
+                        <div className="col-span-1">
+                          <TextInput label="Total Pages" type="number" value={ann.pageCount} onChange={v => { const up = [...formData.annexures]; up[i].pageCount = v; updateField('annexures', up); }} {...gf(`Annexure #${i + 1} Pages`)} />
+                        </div>
+                      </div>
                       <div className="border-2 border-dashed rounded-xl p-4 text-center text-gray-400 font-bold hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-center gap-2">
                         <Paperclip className="w-4 h-4" /> UPLOAD DOCUMENT
                       </div>

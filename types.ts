@@ -34,6 +34,7 @@ export interface Annexure {
   title: string;
   contentText: string;
   files: string[];
+  pageCount: string;
 }
 
 export interface Application {
