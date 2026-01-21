@@ -336,7 +336,7 @@ export default function App() {
             <Gavel className="text-blue-600 w-8 h-8" />
             <div>
               <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Writ Petition Pro</h1>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">v3.2 | Clean PDF Mode</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">v3.3 | Bit-Perfect PDF</p>
             </div>
           </div>
 
@@ -784,7 +784,7 @@ export default function App() {
       </div>
 
       {isPrinting && (
-        <div className="fixed inset-0 bg-white z-[99999] overflow-auto flex flex-col items-center py-10 print-layer">
+        <div className="fixed inset-0 bg-white z-[99999] overflow-auto flex flex-col items-center print-layer">
           <DocumentPreview
             data={formData}
             annotations={annotations}

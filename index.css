@@ -17,16 +17,24 @@ body {
         display: block !important;
         visibility: visible !important;
         position: static !important;
-        width: 100% !important;
-        height: auto !important;
+        width: 210mm !important;
+        margin: 0 auto !important;
+        padding: 0 !important;
         background: white !important;
         overflow: visible !important;
+    }
+
+    /* Target the Page components strictly to ensure breaks */
+    [id="document-preview"]>div {
+        margin-bottom: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always !important;
+        break-after: page !important;
     }
 
     @page {
         size: A4;
         margin: 0;
-        /* Removing browser headers/footers */
     }
 }
 
