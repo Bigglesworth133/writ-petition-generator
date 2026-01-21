@@ -9,41 +9,44 @@ body {
 }
 
 @media print {
+
+    html,
     body {
-        visibility: hidden;
-        margin: 0;
-        padding: 0;
-        background: white;
+        height: auto !important;
+        overflow: visible !important;
+        background: white !important;
     }
 
-    /* Hide the main app wrapper options */
-    #app-root {
+    body {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Hide the main app wrapper completely */
+    #app-root,
+    .no-print {
         display: none !important;
     }
 
-    /* Reveal only the print container */
+    /* Standardize the print container for multi-page A4 */
     #print-only {
-        visibility: visible;
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
         display: block !important;
-        background: white;
-    }
-
-    #print-only * {
-        visibility: visible;
+        width: 210mm !important;
+        margin: 0 auto !important;
+        height: auto !important;
+        overflow: visible !important;
     }
 
     /* Ensure pages break correctly */
     .page-break {
         page-break-before: always;
+        break-before: page;
     }
 
     @page {
         size: A4;
-        margin: 15mm;
+        margin: 0;
+        /* Let component margins handle it */
     }
 }
 
