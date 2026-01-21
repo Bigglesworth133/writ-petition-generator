@@ -604,25 +604,28 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       </Page>
 
       {/* 7. ANNEXURES */}
-      {data.annexures.map((ann, idx) => {
-        const pageCount = parseInt(ann.pageCount || '1', 10);
-        const pageLabel = renderPagination(pageCount);
+      {/* 7. ANNEXURES */}
+      <div id="annexure-section">
+        {data.annexures.map((ann, idx) => {
+          const pageCount = parseInt(ann.pageCount || '1', 10);
+          const pageLabel = renderPagination(pageCount);
 
-        return (
-          <Page key={ann.id} pageNum={pageLabel} actualPageNum={ap}>
-            <div className="flex justify-between font-bold mb-10 uppercase">
-              <span>Annexure {getAnnexureTitle(idx)}</span>
-            </div>
-            <div className="text-center font-bold underline mb-20 uppercase text-lg">
-              A TRUE COPY OF {ann.title}
-            </div>
-            <div className="border-2 border-dashed border-gray-300 h-[500px] flex items-center justify-center text-gray-400 font-bold italic">
-              [DOCUMENT: {ann.title} - {pageCount} PAGES]
-            </div>
-            <Signature />
-          </Page>
-        );
-      })}
+          return (
+            <Page key={ann.id} pageNum={pageLabel} actualPageNum={ap}>
+              <div className="flex justify-between font-bold mb-10 uppercase">
+                <span>Annexure {getAnnexureTitle(idx)}</span>
+              </div>
+              <div className="text-center font-bold underline mb-20 uppercase text-lg">
+                A TRUE COPY OF {ann.title}
+              </div>
+              <div className="border-2 border-dashed border-gray-300 h-[500px] flex items-center justify-center text-gray-400 font-bold italic">
+                [DOCUMENT: {ann.title} - {pageCount} PAGES]
+              </div>
+              <Signature />
+            </Page>
+          );
+        })}
+      </div>
 
       {/* 8. APPLICATIONS */}
       {data.applications.map((app) => (
