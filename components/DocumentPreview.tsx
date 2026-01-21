@@ -468,8 +468,10 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         return (
           <Page pageNum={pageLabel} actualPageNum={ap}>
             <Header />
-            <div className="text-center font-bold underline mb-4 uppercase">Synopsis</div>
-            <p className="italic font-bold mb-6 text-center">{data.synopsisDescription}</p>
+            <div className="uppercase font-bold underline mb-4 text-center">
+              {data.synopsisDescription}
+            </div>
+            <div className="text-center font-bold underline mb-6 uppercase">Synopsis</div>
 
             {data.preSynopsisContent && (
               <div className="whitespace-pre-wrap mb-10 text-justify">
