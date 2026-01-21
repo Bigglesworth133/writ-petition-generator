@@ -8,6 +8,10 @@ body {
     font-family: 'Times New Roman', Times, serif;
 }
 
+#print-only {
+    display: none;
+}
+
 @media print {
 
     html,
@@ -15,38 +19,53 @@ body {
         height: auto !important;
         overflow: visible !important;
         background: white !important;
+        width: 100% !important;
     }
 
     body {
         margin: 0 !important;
         padding: 0 !important;
+        background: white !important;
     }
 
-    /* Hide the main app wrapper completely */
+    /* Hide EVERYTHING inside #root except for #print-only */
     #app-root,
-    .no-print {
+    .no-print,
+    header,
+    footer,
+    button,
+    nav {
         display: none !important;
     }
 
-    /* Standardize the print container for multi-page A4 */
+    /* Force #print-only to be the ONLY thing in the flow */
     #print-only {
         display: block !important;
-        width: 210mm !important;
-        margin: 0 auto !important;
-        height: auto !important;
-        overflow: visible !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: static !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
     }
 
-    /* Ensure pages break correctly */
-    .page-break {
-        page-break-before: always;
-        break-before: page;
+    #print-only * {
+        visibility: visible !important;
+    }
+
+    /* Standardize the Page component inside print */
+    #print-only [style*="width: 210mm"] {
+        margin-bottom: 0 !important;
+        box-shadow: none !important;
+        page-break-after: always !important;
+        break-after: page !important;
     }
 
     @page {
         size: A4;
-        margin: 0;
-        /* Let component margins handle it */
+        margin: 10mm;
+        /* Minimal safety margin */
     }
 }
 
