@@ -353,7 +353,6 @@ export default function App() {
               <button onClick={() => setActiveTab('form')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'form' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>FORM</button>
               <button onClick={() => setActiveTab('preview')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'preview' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>PREVIEW</button>
             </div>
-            <button onClick={handlePrint} className="p-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-lg transition-all active:scale-95"><Printer className="w-5 h-5" /></button>
           </div>
         </header>
 
@@ -642,7 +641,7 @@ export default function App() {
 
 
 
-                  <div className="mt-12 bg-gray-900 rounded-3xl p-10 text-white shadow-2xl">
+                  <div className="mt-12 bg-gray-900 rounded-3xl p-10 text-white shadow-2xl relative z-10 border-4 border-gray-800">
                     <h3 className="text-2xl font-black mb-6 flex items-center gap-3"><Gavel className="w-6 h-6 text-yellow-500" /> Actions & Export</h3>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -682,7 +681,6 @@ export default function App() {
                       <button onClick={() => setIsPreviewMaximized(!isPreviewMaximized)} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors text-white/60 hover:text-white" title={isPreviewMaximized ? "Exit Maximize" : "Maximize"}>
                         {isPreviewMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                       </button>
-                      <button onClick={handlePrint} className="p-1.5 hover:bg-gray-700 rounded-lg transition-colors text-white/60 hover:text-white"><Printer className="w-4 h-4" /></button>
                     </div>
                   </div>
                   <div className={`bg-gray-200 overflow-auto h-[calc(100vh-12rem)] relative custom-scrollbar`}>
@@ -792,6 +790,6 @@ export default function App() {
             annotations={annotations}
           />
         </div>
-      </div>
+      </div >
     );
   }
