@@ -322,17 +322,13 @@ export default function App() {
                   </div>
                 )}
 
-                <SectionHeader title="Introduction" />
-                <div className="grid grid-cols-2 gap-4">
-                  <TextInput label="High Court" value={formData.highCourt} onChange={v => updateField('highCourt', v)} {...gf('High Court')} />
-                  <TextInput label="Jurisdiction" value={formData.jurisdiction} onChange={v => updateField('jurisdiction', v)} {...gf('Jurisdiction')} />
-                  <SelectInput label="Type" value={formData.petitionType} options={[{ label: 'Civil', value: 'Civil' }, { label: 'Criminal', value: 'Criminal' }]} onChange={v => updateField('petitionType', v)} {...gf('Type')} />
-                  <TextInput label="Year" value={formData.year} onChange={v => updateField('year', v)} {...gf('Year')} />
-                  <TextInput label="Filing Location" value={formData.location} onChange={v => updateField('location', v)} {...gf('Filing Location')} />
-                  <TextInput label="Filing Date" value={formData.filingDate} onChange={v => updateField('filingDate', v)} {...gf('Filing Date')} />
+                <SectionHeader title="Urgent Application" />
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="col-span-1"><TextInput label="Pin Code" value={formData.urgentPinCode} onChange={v => updateField('urgentPinCode', v)} {...gf('Urgent Pin Code')} /></div>
+                  <div className="col-span-3"><TextInput label="Grounds for Urgency" multiline value={formData.urgentContent} onChange={v => updateField('urgentContent', v)} {...gf('Grounds for Urgency')} /></div>
                 </div>
 
-                <div className="mt-6 flex flex-wrap gap-4">
+                <div className="mt-6 flex flex-wrap gap-4 mb-8">
                   <button
                     onClick={() => updateField('includeListingProforma', !formData.includeListingProforma)}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${formData.includeListingProforma ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'}`}
@@ -345,6 +341,42 @@ export default function App() {
                   >
                     <CheckCircle className="w-4 h-4" /> {formData.includeCertificate ? 'CERTIFICATE: INCLUDED' : 'CERTIFICATE: EXCLUDED'}
                   </button>
+                </div>
+
+                <SectionHeader title="Certificate Details" />
+                <TextInput label="Certificate Content" multiline value={formData.certificateContent} onChange={v => updateField('certificateContent', v)} {...gf('Certificate Content')} />
+
+                <SectionHeader title="Notice of Motion" />
+                <div className="grid grid-cols-2 gap-4">
+                  <TextInput label="Addressed To" value={formData.noticeAddressedTo} onChange={v => updateField('noticeAddressedTo', v)} {...gf('Notice Addressed To')} />
+                  <TextInput label="Designation" value={formData.noticeDesignation} onChange={v => updateField('noticeDesignation', v)} {...gf('Notice Designation')} />
+                  <TextInput label="Organisation" value={formData.noticeOrg} onChange={v => updateField('noticeOrg', v)} {...gf('Notice Organisation')} />
+                  <TextInput label="Hearing Date (Est)" value={formData.noticeHearingDate} onChange={v => updateField('noticeHearingDate', v)} {...gf('Notice Hearing Date (Est)')} />
+                </div>
+                <TextInput label="Petition Through" value={formData.petitionDescription} onChange={v => updateField('petitionDescription', v)} {...gf('Petition Through')} />
+                <div className="grid grid-cols-2 gap-4">
+                  <TextInput label="Location" value={formData.location} onChange={v => updateField('location', v)} {...gf('Location')} />
+                  <TextInput label="Filing Date" value={formData.filingDate} onChange={v => updateField('filingDate', v)} {...gf('Filing Date')} />
+                </div>
+
+                <SectionHeader title="Court Fee" />
+                <div className="grid grid-cols-2 gap-4">
+                  <TextInput label="UIN" value={formData.courtFeeUin} onChange={v => updateField('courtFeeUin', v)} />
+                  <TextInput label="Amount (INR)" value={formData.courtFeeAmount} onChange={v => updateField('courtFeeAmount', v)} />
+                  <div className="col-span-2 relative">
+                    <input type="file" id="court-fee-upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'courtFeeAttachment')} />
+                    <label htmlFor="court-fee-upload" className={`border-2 border-dashed rounded-xl p-8 text-center font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${formData.courtFeeAttachment ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
+                      {formData.courtFeeAttachment ? <><CheckCircle2 className="w-5 h-5" /> ATTACHED</> : <><Paperclip className="w-5 h-5" /> ATTACH COURT FEE COPY</>}
+                    </label>
+                  </div>
+                </div>
+
+                <SectionHeader title="Introduction (Memo of Parties)" />
+                <div className="grid grid-cols-2 gap-4">
+                  <TextInput label="High Court" value={formData.highCourt} onChange={v => updateField('highCourt', v)} {...gf('High Court')} />
+                  <TextInput label="Jurisdiction" value={formData.jurisdiction} onChange={v => updateField('jurisdiction', v)} {...gf('Jurisdiction')} />
+                  <SelectInput label="Type" value={formData.petitionType} options={[{ label: 'Civil', value: 'Civil' }, { label: 'Criminal', value: 'Criminal' }]} onChange={v => updateField('petitionType', v)} {...gf('Type')} />
+                  <TextInput label="Year" value={formData.year} onChange={v => updateField('year', v)} {...gf('Year')} />
                 </div>
 
                 <RepeatableBlock title="Petitioners" onAdd={() => updateField('petitioners', [...formData.petitioners, { id: Date.now().toString(), name: '', addresses: [''], city: '', pin: '', state: '', authRep: '' }])}>
@@ -378,79 +410,33 @@ export default function App() {
                   ))}
                 </RepeatableBlock>
 
-                <RepeatableBlock title="Advocates" onAdd={() => updateField('advocates', [...formData.advocates, { id: Date.now().toString(), name: '', enrolmentNumber: '', addresses: [''], phoneNumbers: [''], email: '' }])}>
-                  {formData.advocates.map((adv, i) => (
-                    <div key={adv.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200 mb-4">
-                      {formData.advocates.length > 1 && (
-                        <button onClick={() => updateField('advocates', formData.advocates.filter(x => x.id !== adv.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                      )}
-                      <div className="grid grid-cols-2 gap-4">
-                        <TextInput label={`Advocate #${i + 1} Name`} value={adv.name} onChange={v => { const up = [...formData.advocates]; up[i].name = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Name`)} />
-                        <TextInput label="Enrolment Number" value={adv.enrolmentNumber} onChange={v => { const up = [...formData.advocates]; up[i].enrolmentNumber = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Enrolment`)} />
-
-                        <div className="col-span-2">
-                          <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Addresses</p>
-                          {adv.addresses.map((addr, ai) => (
-                            <div key={ai} className="flex gap-2 mb-2">
-                              <div className="flex-1"><TextInput label={`Address ${ai + 1}`} value={addr} onChange={v => { const up = [...formData.advocates]; up[i].addresses[ai] = v; updateField('advocates', up); }} /></div>
-                              <button onClick={() => { const up = [...formData.advocates]; up[i].addresses.splice(ai, 1); updateField('advocates', up); }} className="text-gray-300 hover:text-red-500 mt-6"><Trash2 className="w-4 h-4" /></button>
-                            </div>
-                          ))}
-                          <button onClick={() => { const up = [...formData.advocates]; up[i].addresses.push(''); updateField('advocates', up); }} className="text-[10px] font-bold text-blue-600 uppercase">+ Add Address</button>
-                        </div>
-
-                        <div className="col-span-2">
-                          <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Phone Numbers</p>
-                          {adv.phoneNumbers.map((phone, pi) => (
-                            <div key={pi} className="flex gap-2 items-center mb-2">
-                              <div className="flex-1"><TextInput label={`Phone ${pi + 1}`} value={phone} onChange={v => { const up = [...formData.advocates]; up[i].phoneNumbers[pi] = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Phone #${pi + 1}`)} /></div>
-                              {adv.phoneNumbers.length > 1 && (
-                                <button onClick={() => { const up = [...formData.advocates]; up[i].phoneNumbers = up[i].phoneNumbers.filter((_, idx) => idx !== pi); updateField('advocates', up); }} className="text-gray-300 hover:text-red-500 mt-2"><Trash2 className="w-4 h-4" /></button>
-                              )}
-                            </div>
-                          ))}
-                          <button onClick={() => { const up = [...formData.advocates]; up[i].phoneNumbers.push(''); updateField('advocates', up); }} className="text-[10px] font-bold text-blue-600 uppercase">+ Add Phone</button>
-                        </div>
-
-                        <div className="col-span-2">
-                          <TextInput label="Email" type="email" value={adv.email} onChange={v => { const up = [...formData.advocates]; up[i].email = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Email`)} />
-                        </div>
-                      </div>
+                <SectionHeader title="Synopsis & List of Dates" />
+                <TextInput label="Synopsis Header" value={formData.synopsisDescription} onChange={v => updateField('synopsisDescription', v)} {...gf('Synopsis Header')} />
+                <TextInput label="Preliminary Statement (Optional)" multiline value={formData.preSynopsisContent} onChange={v => updateField('preSynopsisContent', v)} {...gf('Pre-Synopsis')} />
+                <TextInput label="Synopsis Content" multiline value={formData.synopsisContent} onChange={v => updateField('synopsisContent', v)} {...gf('Synopsis')} />
+                <RepeatableBlock title="List of Dates" onAdd={() => updateField('dateList', [...formData.dateList, { id: Date.now().toString(), dates: [''], event: '' }])}>
+                  {formData.dateList.map((d, i) => (
+                    <div key={d.id} className="flex gap-2 items-start bg-white p-3 rounded-xl shadow-sm">
+                      <div className="w-32"><TextInput label="Date" value={d.dates[0]} onChange={v => { const up = [...formData.dateList]; up[i].dates = [v]; updateField('dateList', up); }} /></div>
+                      <div className="flex-1"><TextInput label="Event" value={d.event} onChange={v => { const up = [...formData.dateList]; up[i].event = v; updateField('dateList', up); }} /></div>
                     </div>
                   ))}
                 </RepeatableBlock>
 
-                <SectionHeader title="Index Notes (displayed below Index)" />
-                <RepeatableBlock title="Notes" onAdd={() => updateField('notes', [...formData.notes, { id: Date.now().toString(), text: '' }])}>
-                  {formData.notes.map((note, i) => (
-                    <div key={note.id} className="flex gap-2 items-start bg-white p-3 rounded-xl shadow-sm mb-2">
-                      <div className="px-3 py-2 font-bold text-gray-400">Note {i + 1}</div>
-                      <div className="flex-1"><TextInput label="Note Content" value={note.text} onChange={v => { const up = [...formData.notes]; up[i].text = v; updateField('notes', up); }} {...gf(`Note #${i + 1}`)} /></div>
-                      <button onClick={() => updateField('notes', formData.notes.filter(x => x.id !== note.id))} className="text-gray-300 hover:text-red-500 mt-3"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  ))}
-                </RepeatableBlock>
+                <SectionHeader title="The Writ Petition" />
+                <TextInput label="Header / Showeth" multiline value={formData.petitionShoweth} onChange={v => updateField('petitionShoweth', v)} {...gf('Header / Showeth')} />
+                <TextInput label="Facts" multiline value={formData.petitionFacts} onChange={v => updateField('petitionFacts', v)} {...gf('Facts')} />
+                <TextInput label="Grounds" multiline value={formData.petitionGrounds} onChange={v => updateField('petitionGrounds', v)} {...gf('Grounds')} />
+                <TextInput label="Prayers" multiline value={formData.petitionPrayers} onChange={v => updateField('petitionPrayers', v)} {...gf('Prayers')} />
 
-                <SectionHeader title="Certificate Details" />
-                <TextInput label="Certificate Content" multiline value={formData.certificateContent} onChange={v => updateField('certificateContent', v)} {...gf('Certificate Content')} />
-
-                <SectionHeader title="Urgent Application" />
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="col-span-1"><TextInput label="Pin Code" value={formData.urgentPinCode} onChange={v => updateField('urgentPinCode', v)} {...gf('Urgent Pin Code')} /></div>
-                  <div className="col-span-3"><TextInput label="Grounds for Urgency" multiline value={formData.urgentContent} onChange={v => updateField('urgentContent', v)} {...gf('Grounds for Urgency')} /></div>
-                </div>
-
-                <SectionHeader title="Notice of Motion" />
+                <SectionHeader title="Affidavit Details" />
                 <div className="grid grid-cols-2 gap-4">
-                  <TextInput label="Addressed To" value={formData.noticeAddressedTo} onChange={v => updateField('noticeAddressedTo', v)} {...gf('Notice Addressed To')} />
-                  <TextInput label="Designation" value={formData.noticeDesignation} onChange={v => updateField('noticeDesignation', v)} {...gf('Notice Designation')} />
-                  <TextInput label="Organisation" value={formData.noticeOrg} onChange={v => updateField('noticeOrg', v)} {...gf('Notice Organisation')} />
-                  <TextInput label="Hearing Date (Est)" value={formData.noticeHearingDate} onChange={v => updateField('noticeHearingDate', v)} {...gf('Notice Hearing Date (Est)')} />
-                </div>
-                <TextInput label="Petition Through" value={formData.petitionDescription} onChange={v => updateField('petitionDescription', v)} {...gf('Petition Through')} />
-                <div className="grid grid-cols-2 gap-4">
-                  <TextInput label="Location" value={formData.location} onChange={v => updateField('location', v)} {...gf('Location')} />
-                  <TextInput label="Filing Date" value={formData.filingDate} onChange={v => updateField('filingDate', v)} {...gf('Filing Date')} />
+                  <SelectInput label="Identity" value={formData.affidavitIdentity} options={[{ label: 'Petitioner', value: 'Petitioner' }, { label: 'Auth Rep', value: 'Authorized Representative' }]} onChange={v => updateField('affidavitIdentity', v)} {...gf('Affidavit Identity')} />
+                  <TextInput label="Name" value={formData.affidavitName} onChange={v => updateField('affidavitName', v)} {...gf('Affidavit Name')} />
+                  <TextInput label="Age" value={formData.affidavitAge} onChange={v => updateField('affidavitAge', v)} {...gf('Affidavit Age')} />
+                  <TextInput label="Verification Date" value={formData.verificationDate} placeholder="e.g. 21.01.2025" onChange={v => updateField('verificationDate', v)} {...gf('Verification Date')} />
+                  <div className="col-span-2"><TextInput label="Address" value={formData.affidavitAddress} onChange={v => updateField('affidavitAddress', v)} {...gf('Affidavit Address')} /></div>
+                  <div className="col-span-2"><TextInput label="Present Location" value={formData.affidavitLocation} onChange={v => updateField('affidavitLocation', v)} {...gf('Affidavit Location')} /></div>
                 </div>
 
                 <SectionHeader title="Annexures" />
@@ -510,44 +496,51 @@ export default function App() {
                   ))}
                 </RepeatableBlock>
 
-                <SectionHeader title="Court Fee" />
-                <div className="grid grid-cols-2 gap-4">
-                  <TextInput label="UIN" value={formData.courtFeeUin} onChange={v => updateField('courtFeeUin', v)} />
-                  <TextInput label="Amount (INR)" value={formData.courtFeeAmount} onChange={v => updateField('courtFeeAmount', v)} />
-                  <div className="col-span-2 relative">
-                    <input type="file" id="court-fee-upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'courtFeeAttachment')} />
-                    <label htmlFor="court-fee-upload" className={`border-2 border-dashed rounded-xl p-8 text-center font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${formData.courtFeeAttachment ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
-                      {formData.courtFeeAttachment ? <><CheckCircle2 className="w-5 h-5" /> ATTACHED</> : <><Paperclip className="w-5 h-5" /> ATTACH COURT FEE COPY</>}
-                    </label>
-                  </div>
-                </div>
-
-                <SectionHeader title="Synopsis & List of Dates" />
-                <TextInput label="Synopsis Header" value={formData.synopsisDescription} onChange={v => updateField('synopsisDescription', v)} {...gf('Synopsis Header')} />
-                <TextInput label="Preliminary Statement (Optional)" multiline value={formData.preSynopsisContent} onChange={v => updateField('preSynopsisContent', v)} {...gf('Pre-Synopsis')} />
-                <TextInput label="Synopsis Content" multiline value={formData.synopsisContent} onChange={v => updateField('synopsisContent', v)} {...gf('Synopsis')} />
-                <RepeatableBlock title="List of Dates" onAdd={() => updateField('dateList', [...formData.dateList, { id: Date.now().toString(), dates: [''], event: '' }])}>
-                  {formData.dateList.map((d, i) => (
-                    <div key={d.id} className="flex gap-2 items-start bg-white p-3 rounded-xl shadow-sm">
-                      <div className="w-32"><TextInput label="Date" value={d.dates[0]} onChange={v => { const up = [...formData.dateList]; up[i].dates = [v]; updateField('dateList', up); }} /></div>
-                      <div className="flex-1"><TextInput label="Event" value={d.event} onChange={v => { const up = [...formData.dateList]; up[i].event = v; updateField('dateList', up); }} /></div>
-                    </div>
-                  ))}
-                </RepeatableBlock>
-
-                <SectionHeader title="The Writ Petition" />
-                <TextInput label="Header / Showeth" multiline value={formData.petitionShoweth} onChange={v => updateField('petitionShoweth', v)} {...gf('Header / Showeth')} />
-                <TextInput label="Facts" multiline value={formData.petitionFacts} onChange={v => updateField('petitionFacts', v)} {...gf('Facts')} />
-                <TextInput label="Grounds" multiline value={formData.petitionGrounds} onChange={v => updateField('petitionGrounds', v)} {...gf('Grounds')} />
-                <TextInput label="Prayers" multiline value={formData.petitionPrayers} onChange={v => updateField('petitionPrayers', v)} {...gf('Prayers')} />
-
-                <SectionHeader title="Letter of Authority" />
+                <SectionHeader title="Advocates & Letter of Authority" />
                 <div className="mb-6 relative">
                   <input type="file" id="loa-upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'letterOfAuthorityUpload')} />
                   <label htmlFor="loa-upload" className={`border-2 border-dashed rounded-xl p-8 text-center font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${formData.letterOfAuthorityUpload ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
                     {formData.letterOfAuthorityUpload ? <><CheckCircle2 className="w-5 h-5" /> LOA ATTACHED</> : <><Paperclip className="w-5 h-5" /> UPLOAD LETTER OF AUTHORITY</>}
                   </label>
                 </div>
+                <RepeatableBlock title="Advocates" onAdd={() => updateField('advocates', [...formData.advocates, { id: Date.now().toString(), name: '', enrolmentNumber: '', addresses: [''], phoneNumbers: [''], email: '' }])}>
+                  {formData.advocates.map((adv, i) => (
+                    <div key={adv.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200 mb-4">
+                      {formData.advocates.length > 1 && (
+                        <button onClick={() => updateField('advocates', formData.advocates.filter(x => x.id !== adv.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                      )}
+                      <div className="grid grid-cols-2 gap-4">
+                        <TextInput label={`Advocate #${i + 1} Name`} value={adv.name} onChange={v => { const up = [...formData.advocates]; up[i].name = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Name`)} />
+                        <TextInput label="Enrolment Number" value={adv.enrolmentNumber} onChange={v => { const up = [...formData.advocates]; up[i].enrolmentNumber = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Enrolment`)} />
+                        <div className="col-span-2">
+                          <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Addresses</p>
+                          {adv.addresses.map((addr, ai) => (
+                            <div key={ai} className="flex gap-2 mb-2">
+                              <div className="flex-1"><TextInput label={`Address ${ai + 1}`} value={addr} onChange={v => { const up = [...formData.advocates]; up[i].addresses[ai] = v; updateField('advocates', up); }} /></div>
+                              <button onClick={() => { const up = [...formData.advocates]; up[i].addresses.splice(ai, 1); updateField('advocates', up); }} className="text-gray-300 hover:text-red-500 mt-6"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          ))}
+                          <button onClick={() => { const up = [...formData.advocates]; up[i].addresses.push(''); updateField('advocates', up); }} className="text-[10px] font-bold text-blue-600 uppercase">+ Add Address</button>
+                        </div>
+                        <div className="col-span-2">
+                          <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Phone Numbers</p>
+                          {adv.phoneNumbers.map((phone, pi) => (
+                            <div key={pi} className="flex gap-2 items-center mb-2">
+                              <div className="flex-1"><TextInput label={`Phone ${pi + 1}`} value={phone} onChange={v => { const up = [...formData.advocates]; up[i].phoneNumbers[pi] = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Phone #${pi + 1}`)} /></div>
+                              {adv.phoneNumbers.length > 1 && (
+                                <button onClick={() => { const up = [...formData.advocates]; up[i].phoneNumbers = up[i].phoneNumbers.filter((_, idx) => idx !== pi); updateField('advocates', up); }} className="text-gray-300 hover:text-red-500 mt-2"><Trash2 className="w-4 h-4" /></button>
+                              )}
+                            </div>
+                          ))}
+                          <button onClick={() => { const up = [...formData.advocates]; up[i].phoneNumbers.push(''); updateField('advocates', up); }} className="text-[10px] font-bold text-blue-600 uppercase">+ Add Phone</button>
+                        </div>
+                        <div className="col-span-2">
+                          <TextInput label="Email" type="email" value={adv.email} onChange={v => { const up = [...formData.advocates]; up[i].email = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Email`)} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </RepeatableBlock>
 
                 <SectionHeader title="Proof of Service" />
                 <div className="mb-4">
@@ -578,15 +571,16 @@ export default function App() {
                   ))}
                 </div>
 
-                <SectionHeader title="Affidavit Details" />
-                <div className="grid grid-cols-2 gap-4">
-                  <SelectInput label="Identity" value={formData.affidavitIdentity} options={[{ label: 'Petitioner', value: 'Petitioner' }, { label: 'Auth Rep', value: 'Authorized Representative' }]} onChange={v => updateField('affidavitIdentity', v)} {...gf('Affidavit Identity')} />
-                  <TextInput label="Name" value={formData.affidavitName} onChange={v => updateField('affidavitName', v)} {...gf('Affidavit Name')} />
-                  <TextInput label="Age" value={formData.affidavitAge} onChange={v => updateField('affidavitAge', v)} {...gf('Affidavit Age')} />
-                  <TextInput label="Verification Date" value={formData.verificationDate} placeholder="e.g. 21.01.2025" onChange={v => updateField('verificationDate', v)} {...gf('Verification Date')} />
-                  <div className="col-span-2"><TextInput label="Address" value={formData.affidavitAddress} onChange={v => updateField('affidavitAddress', v)} {...gf('Affidavit Address')} /></div>
-                  <div className="col-span-2"><TextInput label="Present Location" value={formData.affidavitLocation} onChange={v => updateField('affidavitLocation', v)} {...gf('Affidavit Location')} /></div>
-                </div>
+                <SectionHeader title="Index Notes (displayed below Index)" />
+                <RepeatableBlock title="Notes" onAdd={() => updateField('notes', [...formData.notes, { id: Date.now().toString(), text: '' }])}>
+                  {formData.notes.map((note, i) => (
+                    <div key={note.id} className="flex gap-2 items-start bg-white p-3 rounded-xl shadow-sm mb-2">
+                      <div className="px-3 py-2 font-bold text-gray-400">Note {i + 1}</div>
+                      <div className="flex-1"><TextInput label="Note Content" value={note.text} onChange={v => { const up = [...formData.notes]; up[i].text = v; updateField('notes', up); }} {...gf(`Note #${i + 1}`)} /></div>
+                      <button onClick={() => updateField('notes', formData.notes.filter(x => x.id !== note.id))} className="text-gray-300 hover:text-red-500 mt-3"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                </RepeatableBlock>
 
                 <div className="mt-12 bg-blue-600 rounded-3xl p-10 text-white shadow-2xl">
                   <h3 className="text-2xl font-black mb-6">Dispatch Details</h3>
@@ -595,6 +589,7 @@ export default function App() {
                     {isSubmitting ? 'GENERATING...' : <><Send className="w-5 h-5" /> GENERATE & EMAIL PETITION</>}
                   </button>
                 </div>
+
 
               </div>
             </div>
