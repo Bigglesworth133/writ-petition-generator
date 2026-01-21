@@ -229,7 +229,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
   );
 
   const Signature = () => (
-    <div className="mt-20 relative h-40">
+    <div className="mt-12 relative h-40">
       <div className="absolute left-0 bottom-0 font-bold uppercase text-xs">
         {data.location}, {data.filingDate}
       </div>

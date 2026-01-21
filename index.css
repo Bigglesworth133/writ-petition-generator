@@ -9,8 +9,26 @@ body {
 }
 
 @media print {
+
+    /* Global box-sizing for print consistency */
+    * {
+        box-sizing: border-box !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
     .no-print {
         display: none !important;
+    }
+
+    /* Reset the preview container for print */
+    #document-preview {
+        display: block !important;
+        width: 210mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        gap: 0 !important;
+        /* Extremely important: removes gap between pages */
     }
 
     .print-layer {
@@ -18,23 +36,35 @@ body {
         visibility: visible !important;
         position: static !important;
         width: 210mm !important;
-        margin: 0 auto !important;
+        margin: 0 !important;
         padding: 0 !important;
         background: white !important;
         overflow: visible !important;
     }
 
-    /* Target the Page components strictly to ensure breaks */
+    /* Force each "Page" component to be exactly one A4 sheet */
     [id="document-preview"]>div {
-        margin-bottom: 0 !important;
+        margin: 0 !important;
+        padding: 20mm 40mm !important;
+        /* Force margins to match constants precisely */
+        width: 210mm !important;
+        height: 297mm !important;
+        /* EXACT height to prevent drift */
+        min-height: 297mm !important;
+        max-height: 297mm !important;
+        overflow: hidden !important;
+        /* Prevents "spillover" pages */
         box-shadow: none !important;
         page-break-after: always !important;
         break-after: page !important;
+        position: relative !important;
+        background: white !important;
     }
 
     @page {
         size: A4;
-        margin: 0;
+        margin: 0 !important;
+        /* Browser's own margins removed */
     }
 }
 
