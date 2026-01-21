@@ -320,7 +320,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white md:bg-gray-50 flex flex-col text-black selection:bg-blue-100 print:block print:h-auto print:overflow-visible">
+    <div id="app-root" className="min-h-screen bg-white md:bg-gray-50 flex flex-col text-black selection:bg-blue-100">
 
       <header className="bg-white border-b sticky top-0 z-50 px-6 py-4 flex justify-between items-center shadow-sm no-print">
         <div className="flex items-center gap-4">
@@ -650,8 +650,6 @@ export default function App() {
                       <span>WORD (.DOCX)</span>
                     </button>
                   </div>
-
-                  </div>
                 </div>
 
 
@@ -772,12 +770,12 @@ export default function App() {
           </div>
         </main >
 
-    <div className="hidden print:block">
-      <DocumentPreview
-        data={formData}
-        annotations={annotations}
-      />
+      <div id="print-only" className="hidden print:block">
+        <DocumentPreview
+          data={formData}
+          annotations={annotations}
+        />
+      </div>
     </div>
-      </div >
-    );
+  );
 }

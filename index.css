@@ -9,30 +9,41 @@ body {
 }
 
 @media print {
-
-    body,
-    #root {
-        background: white !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        height: auto !important;
-        width: 100% !important;
-        overflow: visible !important;
-        display: block !important;
+    body {
+        visibility: hidden;
+        margin: 0;
+        padding: 0;
+        background: white;
     }
 
-    .no-print {
+    /* Hide the main app wrapper options */
+    #app-root {
         display: none !important;
+    }
+
+    /* Reveal only the print container */
+    #print-only {
+        visibility: visible;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        display: block !important;
+        background: white;
+    }
+
+    #print-only * {
+        visibility: visible;
+    }
+
+    /* Ensure pages break correctly */
+    .page-break {
+        page-break-before: always;
     }
 
     @page {
         size: A4;
         margin: 15mm;
-    }
-
-    /* Ensure specific page breaks are respected if we add them later */
-    .page-break {
-        page-break-before: always;
     }
 }
 
