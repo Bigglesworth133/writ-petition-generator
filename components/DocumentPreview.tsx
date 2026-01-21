@@ -50,11 +50,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       <div className="times-new-roman text-justify" style={{ fontSize: '14pt', lineHeight: '1.5', color: 'black' }}>
         {children}
       </div>
-      {pageNum !== undefined && (
-        <div className="absolute top-8 right-12 text-right font-bold text-sm no-print-pagination w-auto bg-white pl-2">
-          {pageNum}
-        </div>
-      )}
+      <PageNumber num={pageNum} />
       {/* Annotation Pins */}
       {annotations.filter(a => a.pageNum === actualPageNum).map(anno => (
         <div
@@ -197,6 +193,15 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     return data.petitionType === 'Civil' ? 'W.P.(C)' : 'W.P.(CRL)';
   };
 
+  const PageNumber = ({ num }: { num?: string | number }) => {
+    if (num === undefined) return null;
+    return (
+      <div className="absolute top-8 right-12 text-right font-bold text-[12pt] no-print-pagination">
+        {num}
+      </div>
+    );
+  };
+
   const Header = () => (
     <div className="text-center font-bold mb-10 uppercase">
       <p>{data.highCourt || HIGH_COURT_DEFAULT}</p>
@@ -279,7 +284,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     const end = p + estimatedPages;
     p += estimatedPages;
     ap++; // Only 1 DOM page
-    return estimatedPages > 1 ? `${start}-${end}` : start;
+    return start;
   };
 
   return (
@@ -688,28 +693,28 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       {/* 10. VAKALATNAMA */}
       <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
-        <div className="text-center font-bold underline mb-10 uppercase text-lg">Vakalatnama</div>
+        <div className="text-center font-bold underline mb-6 uppercase text-lg">Vakalatnama</div>
 
-        <div className="border border-black p-4 mb-4 text-xs font-bold uppercase">
+        <div className="border border-black p-3 mb-4 text-xs font-bold uppercase bg-gray-50">
           <p>CASE: {getCauseTitle().pText} VS {getCauseTitle().rText}</p>
           <p>{getWpShorthand()} NO. _______ OF {data.year}</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-10">
-          <div className="border border-black p-10 h-64 flex flex-col justify-between">
-            <p className="font-bold underline text-center uppercase">Advocate(s) Signature</p>
+        <div className="grid grid-cols-2 gap-8">
+          <div className="border border-black p-6 h-40 flex flex-col justify-between">
+            <p className="font-bold underline text-center uppercase text-[10px]">Advocate(s) Signature</p>
             <div>
               {data.advocates.map(adv => (
-                <p key={adv.id} className="text-sm font-bold uppercase">{adv.name}</p>
+                <p key={adv.id} className="text-[10px] font-bold uppercase leading-none">{adv.name}</p>
               ))}
             </div>
           </div>
-          <div className="border border-black p-10 h-64 flex flex-col justify-between italic">
+          <div className="border border-black p-6 h-40 flex flex-col justify-between italic text-[10px]">
             <p className="font-bold underline text-center uppercase not-italic">Petitioner(s) Signature</p>
             <p className="text-right mt-auto font-bold uppercase">Petitioner(s)</p>
           </div>
         </div>
-        <div className="mt-10 p-4 border border-black text-[10pt] text-justify space-y-4">
+        <div className="mt-4 p-4 border border-black text-[9pt] text-justify space-y-2 leading-tight opacity-90">
           <p>
             I/We, the Petitioner(s) in the above-mentioned Case, do hereby appoint and retain the Advocate(s) named above to appear, plead and act for me/us in the above-mentioned Case and in connection therewith, to deposit, receive and take back any and all such monies as may be deposited, received or taken back by me/us and also to file such documents, to make such statements, and to take all such proceedings as may be necessary in the said case at all stages.
           </p>
@@ -720,7 +725,14 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             And I/We hereby agree that everything done by the said Advocate(s) or any of them in connection with the said case shall be binding on me/us as if done by me/us in person.
           </p>
         </div>
-        <Signature />
+
+        <div className="mt-8 flex justify-between items-end text-[10px] font-bold uppercase">
+          <div>{data.location}, {data.filingDate}</div>
+          <div className="text-right">
+            <div className="w-48 border-t border-black mb-1"></div>
+            <p>Signature of Petitioner(s)</p>
+          </div>
+        </div>
       </Page>
 
       {/* 11. PROOF OF SERVICE */}
