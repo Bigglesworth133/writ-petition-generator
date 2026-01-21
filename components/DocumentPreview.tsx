@@ -225,21 +225,26 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
   );
 
   const Signature = () => (
-    <div className="mt-20 flex flex-col items-end text-right font-bold text-xs uppercase">
-      <div className="w-64 border-t border-black mb-1"></div>
-      <p>PETITIONER(S)</p>
-      <p>THROUGH</p>
-      {data.advocates.map((adv) => (
-        <div key={adv.id} className="mt-2 text-[10pt]">
-          <p>({adv.name || "ADVOCATE"})</p>
-          <p className="font-normal normal-case">Advocate for Petitioner(s)</p>
-          <p className="font-normal normal-case">Enrolment No: {adv.enrolmentNumber}</p>
-          {adv.addresses[0] && <p className="font-normal normal-case w-64">{adv.addresses[0]}</p>}
-          {adv.phoneNumbers[0] && <p className="font-normal normal-case">M: {adv.phoneNumbers[0]}</p>}
-          {adv.email && <p className="font-normal normal-case">Email: {adv.email}</p>}
-        </div>
-      ))}
-      <p className="mt-4">{data.location}, {data.filingDate}</p>
+    <div className="mt-20 relative h-40">
+      <div className="absolute left-0 bottom-0 font-bold uppercase text-xs">
+        {data.location}, {data.filingDate}
+      </div>
+      <div className="absolute right-0 top-0 flex flex-col items-end text-right font-bold text-xs uppercase">
+        <div className="w-64 border-t border-black mb-1"></div>
+        <p>PETITIONER(S)</p>
+        <p>THROUGH</p>
+        {data.advocates.map((adv) => (
+          <div key={adv.id} className="mt-2 text-[10pt]">
+            <p>({adv.name || "ADVOCATE"})</p>
+            <p className="font-normal normal-case">Advocate for Petitioner(s)</p>
+            <p className="font-normal normal-case">Enrolment No: {adv.enrolmentNumber}</p>
+            {adv.addresses[0] && <p className="font-normal normal-case w-64">{adv.addresses[0]}</p>}
+            {adv.phoneNumbers[0] && <p className="font-normal normal-case">M: {adv.phoneNumbers[0]}</p>}
+            {adv.email && <p className="font-normal normal-case">Email: {adv.email}</p>}
+          </div>
+        ))}
+      </div>
+      <div className="clearfix"></div>
     </div>
   );
 
@@ -523,7 +528,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
               {data.petitionShoweth}
             </div>
 
-            <div className="font-bold underline mb-4 uppercase">Brief Facts:</div>
+            <div className="font-bold underline mb-4 uppercase">Facts:</div>
             <div className="whitespace-pre-wrap mb-10 text-justify"><FormattedText text={data.petitionFacts} /></div>
 
             {/* Truncated for preview... */}
