@@ -16,6 +16,10 @@ import { TextInput, SectionHeader, RepeatableBlock, SelectInput } from './compon
 import { DocumentPreview } from './components/DocumentPreview';
 import { supabase } from './lib/supabase';
 import { CheckCircle, FileText, Send, Printer, AlertTriangle, Trash2, Mail, Gavel, Plus, Paperclip, MessageSquare, StickyNote, Download as DownloadIcon, DownloadCloud, Edit, CornerUpRight, CheckCircle2, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 const INITIAL_DATA: WritFormData = {
   highCourt: "IN THE HIGH COURT OF DELHI AT NEW DELHI",
@@ -199,6 +203,28 @@ export default function App() {
   }, []);
 
   const handlePrint = () => window.print();
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const updatedAnnexures = [...formData.annexures];
+    updatedAnnexures[index].files = [file.name]; // Visual feedback
+
+    // Auto-detect pages if PDF
+    if (file.type === 'application/pdf') {
+      try {
+        const buffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+        updatedAnnexures[index].pageCount = pdf.numPages.toString();
+      } catch (err) {
+        console.error('PDF Read Error:', err);
+        // Fallback or alert if needed
+      }
+    }
+
+    updateField('annexures', updatedAnnexures);
+  };
 
   const gf = (label: string) => ({
     reviewMode: isReviewMode,
@@ -430,8 +456,30 @@ export default function App() {
                           <TextInput label="Total Pages" type="number" value={ann.pageCount} onChange={v => { const up = [...formData.annexures]; up[i].pageCount = v; updateField('annexures', up); }} {...gf(`Annexure #${i + 1} Pages`)} />
                         </div>
                       </div>
-                      <div className="border-2 border-dashed rounded-xl p-4 text-center text-gray-400 font-bold hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-center gap-2">
-                        <Paperclip className="w-4 h-4" /> UPLOAD DOCUMENT
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id={`file-upload-${ann.id}`}
+                          className="hidden"
+                          accept=".pdf"
+                          onChange={(e) => handleFileUpload(e, i)}
+                        />
+                        <label
+                          htmlFor={`file-upload-${ann.id}`}
+                          className={`border-2 border-dashed rounded-xl p-4 text-center font-bold hover:bg-gray-100 transition-all cursor-pointer flex items-center justify-center gap-2 ${ann.files.length > 0 ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400'}`}
+                        >
+                          {ann.files.length > 0 ? (
+                            <>
+                              <CheckCircle2 className="w-4 h-4" />
+                              {ann.files[0]} ({ann.pageCount} pages detected)
+                            </>
+                          ) : (
+                            <>
+                              <Paperclip className="w-4 h-4" />
+                              UPLOAD PDF (Auto-Count Pages)
+                            </>
+                          )}
+                        </label>
                       </div>
                     </div>
                   ))}
