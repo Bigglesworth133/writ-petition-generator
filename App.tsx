@@ -336,7 +336,7 @@ export default function App() {
             <Gavel className="text-blue-600 w-8 h-8" />
             <div>
               <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Writ Petition Pro</h1>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">v3.1 | Nuclear Print Fix</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">v3.2 | Clean PDF Mode</p>
             </div>
           </div>
 

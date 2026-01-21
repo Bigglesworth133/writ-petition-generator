@@ -25,7 +25,8 @@ body {
 
     @page {
         size: A4;
-        margin: 10mm;
+        margin: 0;
+        /* Removing browser headers/footers */
     }
 }
 
