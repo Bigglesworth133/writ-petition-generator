@@ -640,63 +640,7 @@ export default function App() {
                     ))}
                   </RepeatableBlock>
 
-  const handleExportWord = async () => {
-    const content = document.getElementById('document-preview');
-                  if (!content) return;
 
-                  // Clone to manipulate without affecting UI
-                  const clone = content.cloneNode(true) as HTMLElement;
-
-                  // Remove Annexures
-                  const annexures = clone.querySelector('#annexure-section');
-                  if (annexures) annexures.remove();
-
-    // Remove no-print elements
-    clone.querySelectorAll('.no-print').forEach(el => el.remove());
-
-                  // Basic Styles for Word
-                  const htmlString = `
-                  <!DOCTYPE html>
-                  <html>
-                    <head>
-                      <style>
-                        body {font - family: 'Times New Roman', serif; font-size: 14pt; line-height: 1.5; }
-                        .text-center {text - align: center; }
-                        .text-right {text - align: right; }
-                        .font-bold {font - weight: bold; }
-                        .underline {text - decoration: underline; }
-                        .uppercase {text - transform: uppercase; }
-                        .italic {font - style: italic; }
-                        table {width: 100%; border-collapse: collapse; }
-                        td, th {border: 1px solid black; padding: 8px; }
-                      </style>
-                    </head>
-                    <body>
-                      ${clone.innerHTML}
-                    </body>
-                  </html>
-                  `;
-
-                  try {
-      const blob = await asBlob(htmlString);
-                  saveAs(blob, `Petition_${formData.petitioners[0]?.name || 'Draft'}.docx`);
-    } catch (e) {
-                    console.error('Word Export Error:', e);
-                  alert('Error exporting to Word. Please check console.');
-    }
-  };
-
-  const handleGenerateAndEmail = () => {
-                    // 1. Trigger Print/Save PDF
-                    window.print();
-
-                  // 2. Open Mail Client with Draft
-                  const subject = encodeURIComponent(`Writ Petition: ${formData.petitioners[0]?.name} vs ${formData.respondents[0]?.name}`);
-                  const body = encodeURIComponent(`Please find attached the Writ Petition for filing.\n\nCase: ${formData.petitionDescription}\nFiling Date: ${formData.filingDate}\n\n[PLEASE ATTACH THE DOWNLOADED PDF HERE]`);
-                  window.location.href = `mailto:${formData.userEmail || 'dhruvsethiuk@gmail.com'}?subject=${subject}&body=${body}`;
-    
-    setTimeout(() => setIsSuccess(true), 1000);
-  };
 
                   <div className="mt-12 bg-gray-900 rounded-3xl p-10 text-white shadow-2xl">
                     <h3 className="text-2xl font-black mb-6 flex items-center gap-3"><Gavel className="w-6 h-6 text-yellow-500" /> Actions & Export</h3>
