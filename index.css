@@ -9,10 +9,16 @@ body {
 }
 
 @media print {
-    body {
+
+    body,
+    #root {
         background: white !important;
         padding: 0 !important;
         margin: 0 !important;
+        height: auto !important;
+        width: 100% !important;
+        overflow: visible !important;
+        display: block !important;
     }
 
     .no-print {
@@ -21,15 +27,12 @@ body {
 
     @page {
         size: A4;
-        margin: 20mm;
-
-        @bottom-right {
-            content: counter(page);
-        }
+        margin: 15mm;
     }
 
-    .page-number::after {
-        content: counter(page);
+    /* Ensure specific page breaks are respected if we add them later */
+    .page-break {
+        page-break-before: always;
     }
 }
 

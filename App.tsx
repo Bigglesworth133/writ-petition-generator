@@ -332,7 +332,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white md:bg-gray-50 flex flex-col text-black selection:bg-blue-100">
+    <div className="min-h-screen bg-white md:bg-gray-50 flex flex-col text-black selection:bg-blue-100 print:block print:h-auto print:overflow-visible">
 
       <header className="bg-white border-b sticky top-0 z-50 px-6 py-4 flex justify-between items-center shadow-sm no-print">
         <div className="flex items-center gap-4">
@@ -643,27 +643,40 @@ export default function App() {
 
 
 
-                <div className="mt-12 bg-gray-900 rounded-3xl p-10 text-white shadow-2xl relative z-10 border-4 border-gray-800">
-                  <h3 className="text-2xl font-black mb-6 flex items-center gap-3"><Gavel className="w-6 h-6 text-yellow-500" /> Actions & Export</h3>
+                <div className="mt-12 bg-white rounded-[2rem] p-10 shadow-2xl relative z-10 border border-gray-200 overflow-hidden group">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50 to-transparent opacity-50 rounded-bl-full pointer-events-none"></div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <button onClick={handlePrint} className="bg-white text-gray-900 font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors">
-                      <Printer className="w-5 h-5 text-blue-600" /> PRINT / SAVE PDF (+ Annexures)
+                  <h3 className="text-2xl font-black mb-8 flex items-center gap-3 text-gray-900 relative">
+                    <div className="p-2.5 bg-blue-100 rounded-xl text-blue-600"><Gavel className="w-6 h-6" /></div>
+                    Actions & Export
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <button onClick={handlePrint} className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-5 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3">
+                      <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                      <Printer className="w-5 h-5 relative z-10" />
+                      <span className="relative z-10">PRINT / PDF</span>
                     </button>
-                    <button onClick={handleExportWord} className="bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors">
-                      <FileText className="w-5 h-5" /> EXPORT TO WORD (No Annexures)
+                    <button onClick={handleExportWord} className="group bg-white text-blue-700 border-2 border-blue-50 font-bold py-5 rounded-2xl hover:bg-blue-50 hover:border-blue-100 transition-all flex items-center justify-center gap-3 active:scale-95">
+                      <FileText className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                      <span>WORD (.DOCX)</span>
                     </button>
                   </div>
 
-                  <div className="border-t border-gray-700 pt-6">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 block">Recipient Email</label>
-                    <div className="flex gap-2">
-                      <TextInput value={formData.userEmail} onChange={v => updateField('userEmail', v)} placeholder="dhruvsethiuk@gmail.com" className="bg-gray-800 border-gray-700 text-white placeholder-gray-500" />
-                      <button disabled={isSubmitting} onClick={handleGenerateAndEmail} className="bg-green-600 text-white font-black px-6 rounded-xl shadow-xl flex items-center gap-2 hover:bg-green-700 transition-colors whitespace-nowrap">
-                        <Mail className="w-5 h-5" /> SEND EMAIL
+                  <div className="border-t border-gray-100 pt-8 relative">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 block pl-1">Final Dispatch</label>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <div className="flex-1">
+                        <TextInput value={formData.userEmail} onChange={v => updateField('userEmail', v)} placeholder="recipient@example.com" className="bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-all" />
+                      </div>
+                      <button disabled={isSubmitting} onClick={handleGenerateAndEmail} className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-emerald-200/50 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+                        <Mail className="w-5 h-5" /> SEND VIA EMAIL
                       </button>
                     </div>
-                    <p className="text-[10px] text-gray-500 mt-2">*Opens your default email client with a pre-filled draft. Please attach the saved PDF manually.</p>
+                    <p className="text-[10px] text-gray-400 font-medium mt-3 flex items-center gap-1.5 pl-1">
+                      <AlertTriangle className="w-3 h-3 text-amber-500" />
+                      Opens local mail client with pre-filled draft. Attach PDF manually.
+                    </p>
                   </div>
                 </div>
 
