@@ -319,18 +319,6 @@ export default function App() {
     }
   };
 
-  const handleGenerateAndEmail = () => {
-    // 1. Trigger Print/Save PDF
-    window.print();
-
-    // 2. Open Mail Client with Draft
-    const subject = encodeURIComponent(`Writ Petition: ${formData.petitioners[0]?.name} vs ${formData.respondents[0]?.name}`);
-    const body = encodeURIComponent(`Please find attached the Writ Petition for filing.\n\nCase: ${formData.petitionDescription}\nFiling Date: ${formData.filingDate}\n\n[PLEASE ATTACH THE DOWNLOADED PDF HERE]`);
-    window.location.href = `mailto:${formData.userEmail || 'dhruvsethiuk@gmail.com'}?subject=\${subject}&body=\${body}`;
-
-    setTimeout(() => setIsSuccess(true), 1000);
-  };
-
   return (
     <div className="min-h-screen bg-white md:bg-gray-50 flex flex-col text-black selection:bg-blue-100 print:block print:h-auto print:overflow-visible">
 
@@ -663,20 +651,6 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="border-t border-gray-100 pt-8 relative">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 block pl-1">Final Dispatch</label>
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <div className="flex-1">
-                        <TextInput value={formData.userEmail} onChange={v => updateField('userEmail', v)} placeholder="recipient@example.com" className="bg-gray-50 border-gray-200 focus:bg-white focus:border-blue-500 transition-all" />
-                      </div>
-                      <button disabled={isSubmitting} onClick={handleGenerateAndEmail} className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-emerald-200/50 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
-                        <Mail className="w-5 h-5" /> SEND VIA EMAIL
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-gray-400 font-medium mt-3 flex items-center gap-1.5 pl-1">
-                      <AlertTriangle className="w-3 h-3 text-amber-500" />
-                      Opens local mail client with pre-filled draft. Attach PDF manually.
-                    </p>
                   </div>
                 </div>
 
@@ -796,15 +770,14 @@ export default function App() {
               </div>
             </div>
           </div>
-        )}
-      </main>
+        </main >
 
-      <div className="hidden print:block">
-        <DocumentPreview
-          data={formData}
-          annotations={annotations}
-        />
-      </div>
-    </div >
-  );
+    <div className="hidden print:block">
+      <DocumentPreview
+        data={formData}
+        annotations={annotations}
+      />
+    </div>
+      </div >
+    );
 }
