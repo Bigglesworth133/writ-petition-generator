@@ -8,64 +8,9 @@ body {
     font-family: 'Times New Roman', Times, serif;
 }
 
-#print-only {
-    display: none;
-}
-
 @media print {
-
-    html,
-    body {
-        height: auto !important;
-        overflow: visible !important;
-        background: white !important;
-        width: 100% !important;
-    }
-
-    body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background: white !important;
-    }
-
-    /* Hide EVERYTHING inside #root except for #print-only */
-    #app-root,
-    .no-print,
-    header,
-    footer,
-    button,
-    nav {
+    .no-print {
         display: none !important;
-    }
-
-    /* Force #print-only to be the ONLY thing in the flow */
-    #print-only {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        position: static !important;
-        width: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: white !important;
-    }
-
-    #print-only * {
-        visibility: visible !important;
-    }
-
-    /* Standardize the Page component inside print */
-    #print-only [style*="width: 210mm"] {
-        margin-bottom: 0 !important;
-        box-shadow: none !important;
-        page-break-after: always !important;
-        break-after: page !important;
-    }
-
-    @page {
-        size: A4;
-        margin: 10mm;
-        /* Minimal safety margin */
     }
 }
 

@@ -204,7 +204,55 @@ export default function App() {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const preview = document.getElementById('document-preview');
+    if (!preview) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert("Please allow popups for printing");
+      return;
+    }
+
+    // Capture styles
+    let styles = "";
+    document.querySelectorAll('style, link[rel="stylesheet"]').forEach(tag => {
+      styles += tag.outerHTML;
+    });
+
+    const html = `
+      <html>
+        <head>
+          <title>Writ Petition Print</title>
+          ${styles}
+          <style>
+            body { 
+              background: white !important; 
+              color: black !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            #document-preview { 
+              display: block !important; 
+              width: 100% !important;
+            }
+            @media print {
+              @page { size: A4; margin: 10mm; }
+              #document-preview { padding: 0 !important; margin: 0 !important; }
+            }
+          </style>
+        </head>
+        <body onload="window.print(); window.close();">
+          <div id="document-preview">
+            ${preview.innerHTML}
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
     const file = e.target.files?.[0];
@@ -328,7 +376,7 @@ export default function App() {
             <Gavel className="text-blue-600 w-8 h-8" />
             <div>
               <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Writ Petition Pro</h1>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">v2.4 | Final PDF Fix</p>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">v3.0 | Final Print Fix</p>
             </div>
           </div>
 
@@ -773,14 +821,6 @@ export default function App() {
             </div>
           )}
         </main>
-
-      </div>
-
-      <div id="print-only">
-        <DocumentPreview
-          data={formData}
-          annotations={annotations}
-        />
       </div>
     </>
   );

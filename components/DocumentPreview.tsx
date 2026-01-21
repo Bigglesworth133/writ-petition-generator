@@ -283,7 +283,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
   };
 
   return (
-    <div className="flex flex-col items-center gap-12 pb-20 no-print" id="document-preview">
+    <div className="flex flex-col items-center gap-12 pb-20" id="document-preview">
       {/* 0. LISTING PROFORMA (Conditional) */}
       {data.includeListingProforma && (
         <Page pageNum="A-1" actualPageNum={++ap}>
