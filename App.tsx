@@ -255,10 +255,20 @@ export default function App() {
       return;
     }
 
-    setIsSubmitting(true);
     await new Promise(r => setTimeout(r, 1500));
     setIsSubmitting(false);
     setIsSuccess(true);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof WritFormData) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        updateField(fieldName, reader.result as string); // base64
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -504,8 +514,11 @@ export default function App() {
                 <div className="grid grid-cols-2 gap-4">
                   <TextInput label="UIN" value={formData.courtFeeUin} onChange={v => updateField('courtFeeUin', v)} />
                   <TextInput label="Amount (INR)" value={formData.courtFeeAmount} onChange={v => updateField('courtFeeAmount', v)} />
-                  <div className="col-span-2 border-2 border-dashed rounded-xl p-8 text-center text-gray-400 font-bold hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-center gap-2">
-                    <Paperclip className="w-5 h-5" /> ATTACH COURT FEE COPY
+                  <div className="col-span-2 relative">
+                    <input type="file" id="court-fee-upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'courtFeeAttachment')} />
+                    <label htmlFor="court-fee-upload" className={`border-2 border-dashed rounded-xl p-8 text-center font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${formData.courtFeeAttachment ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
+                      {formData.courtFeeAttachment ? <><CheckCircle2 className="w-5 h-5" /> ATTACHED</> : <><Paperclip className="w-5 h-5" /> ATTACH COURT FEE COPY</>}
+                    </label>
                   </div>
                 </div>
 
@@ -529,22 +542,41 @@ export default function App() {
                 <TextInput label="Prayers" multiline value={formData.petitionPrayers} onChange={v => updateField('petitionPrayers', v)} {...gf('Prayers')} />
 
                 <SectionHeader title="Letter of Authority" />
-                <div className="border-2 border-dashed rounded-xl p-8 text-center text-gray-400 font-bold hover:bg-gray-50 transition-colors cursor-pointer flex items-center justify-center gap-2 mb-6"
-                  onClick={() => updateField('letterOfAuthorityUpload', 'loa.pdf')}>
-                  <Paperclip className="w-5 h-5" /> {formData.letterOfAuthorityUpload ? 'LOA_ATTACHED.PDF' : 'UPLOAD LETTER OF AUTHORITY'}
+                <div className="mb-6 relative">
+                  <input type="file" id="loa-upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'letterOfAuthorityUpload')} />
+                  <label htmlFor="loa-upload" className={`border-2 border-dashed rounded-xl p-8 text-center font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${formData.letterOfAuthorityUpload ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
+                    {formData.letterOfAuthorityUpload ? <><CheckCircle2 className="w-5 h-5" /> LOA ATTACHED</> : <><Paperclip className="w-5 h-5" /> UPLOAD LETTER OF AUTHORITY</>}
+                  </label>
                 </div>
 
                 <SectionHeader title="Proof of Service" />
-                <RepeatableBlock title="Service Receipts" onAdd={() => updateField('proofOfServiceUploads', [...formData.proofOfServiceUploads, 'receipt.pdf'])}>
-                  <div className="grid grid-cols-2 gap-4">
-                    {formData.proofOfServiceUploads.map((file, i) => (
-                      <div key={i} className="bg-gray-50 p-4 rounded-xl flex items-center justify-between border border-gray-200">
-                        <div className="flex items-center gap-2 text-sm font-bold text-gray-600"><FileText className="w-4 h-4" /> {file.toUpperCase()} #{i + 1}</div>
-                        <button onClick={() => updateField('proofOfServiceUploads', formData.proofOfServiceUploads.filter((_, idx) => idx !== i))} className="text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                <div className="mb-4">
+                  <input type="file" id="pos-upload" className="hidden" accept="image/*" onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        updateField('proofOfServiceUploads', [...formData.proofOfServiceUploads, reader.result as string]);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }} />
+                  <label htmlFor="pos-upload" className="border-2 border-dashed rounded-xl p-4 text-center font-bold transition-all cursor-pointer flex items-center justify-center gap-2 border-blue-200 text-blue-600 bg-blue-50 hover:bg-blue-100">
+                    <Plus className="w-4 h-4" /> ADD SERVICE RECEIPT / PROOF
+                  </label>
+                </div>
+                <div className="space-y-2">
+                  {formData.proofOfServiceUploads.map((file, i) => (
+                    <div key={i} className="bg-gray-50 p-3 rounded-xl flex items-center justify-between border border-gray-200">
+                      <div className="flex items-center gap-2 text-sm font-bold text-gray-600">
+                        <FileText className="w-4 h-4" /> RECEIPT #{i + 1} {file.startsWith('data:') && '(Attached)'}
                       </div>
-                    ))}
-                  </div>
-                </RepeatableBlock>
+                      <button onClick={() => updateField('proofOfServiceUploads', formData.proofOfServiceUploads.filter((_, idx) => idx !== i))} className="text-gray-300 hover:text-red-500">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
 
                 <SectionHeader title="Affidavit Details" />
                 <div className="grid grid-cols-2 gap-4">

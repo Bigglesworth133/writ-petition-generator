@@ -398,8 +398,12 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold underline mb-10 uppercase text-lg">Court Fees</div>
-        <div className="border-2 border-dashed border-gray-300 h-[400px] flex items-center justify-center text-gray-400 font-bold italic mb-10">
-          [COURT FEE CERTIFICATE / E-RECEIPT TO BE ATTACHED HERE]
+        <div className="border-2 border-dashed border-gray-300 h-[400px] flex items-center justify-center text-gray-400 font-bold italic mb-10 overflow-hidden">
+          {data.courtFeeAttachment ? (
+            <img src={data.courtFeeAttachment} className="w-full h-full object-contain" alt="Court Fee" />
+          ) : (
+            <span>[COURT FEE CERTIFICATE / E-RECEIPT TO BE ATTACHED HERE]</span>
+          )}
         </div>
         <table className="w-full border-collapse border border-black text-sm uppercase">
           <tbody>
@@ -650,8 +654,12 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         <Page pageNum={++p} actualPageNum={++ap}>
           <Header />
           <div className="text-center font-bold underline mb-20 uppercase text-lg">Letter of Authority</div>
-          <div className="border-2 border-dashed border-gray-300 h-[600px] flex items-center justify-center text-gray-400 font-bold italic">
-            [ATTACHED LETTER OF AUTHORITY]
+          <div className="border-2 border-dashed border-gray-300 h-[600px] flex items-center justify-center text-gray-400 font-bold italic overflow-hidden">
+            {data.letterOfAuthorityUpload?.startsWith('data:') ? (
+              <img src={data.letterOfAuthorityUpload} className="w-full h-full object-contain" alt="LOA" />
+            ) : (
+              <span>[ATTACHED LETTER OF AUTHORITY]</span>
+            )}
           </div>
           <Signature />
         </Page>
@@ -701,9 +709,13 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
           <Header />
           <div className="text-center font-bold underline mb-20 uppercase text-lg">Proof of Service</div>
           <div className="space-y-4">
-            {data.proofOfServiceUploads.map((_, i) => (
-              <div key={i} className="border-2 border-dashed border-gray-300 h-96 flex items-center justify-center text-gray-400 font-bold italic">
-                [RECEIPT / PROOF OF SERVICE #{i + 1}]
+            {data.proofOfServiceUploads.map((file, i) => (
+              <div key={i} className="border-2 border-dashed border-gray-300 h-96 flex items-center justify-center text-gray-400 font-bold italic overflow-hidden">
+                {file.startsWith('data:') ? (
+                  <img src={file} className="w-full h-full object-contain" alt={`Receipt ${i + 1}`} />
+                ) : (
+                  <span>[RECEIPT / PROOF OF SERVICE #{i + 1}]</span>
+                )}
               </div>
             ))}
           </div>
