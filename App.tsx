@@ -312,7 +312,7 @@ export default function App() {
 
     try {
       const blob = await asBlob(htmlString);
-      saveAs(blob, `Petition_${formData.petitioners[0]?.name || 'Draft'}.docx`);
+      saveAs(blob as Blob, `Petition_${formData.petitioners[0]?.name || 'Draft'}.docx`);
     } catch (e) {
       console.error('Word Export Error:', e);
       alert('Error exporting to Word. Please check console.');
@@ -327,7 +327,7 @@ export default function App() {
           <Gavel className="text-blue-600 w-8 h-8" />
           <div>
             <h1 className="text-xl font-black tracking-tighter uppercase leading-none">Writ Petition Pro</h1>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">v2.0 | Delhi High Court Compliant</p>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">v2.2 | Deployment Stable</p>
           </div>
         </div>
 
@@ -639,11 +639,13 @@ export default function App() {
                     Actions & Export
                   </h3>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    <button onClick={handlePrint} className="group relative overflow-hidden bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold py-5 rounded-2xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-3">
-                      <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-                      <Printer className="w-5 h-5 relative z-10" />
-                      <span className="relative z-10">PRINT / PDF</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <button
+                      onClick={handlePrint}
+                      className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 rounded-2xl shadow-lg hover:shadow-blue-200 transition-all flex items-center justify-center gap-3 active:scale-95"
+                    >
+                      <Printer className="w-5 h-5" />
+                      <span>PRINT / PDF</span>
                     </button>
                     <button onClick={handleExportWord} className="group bg-white text-blue-700 border-2 border-blue-50 font-bold py-5 rounded-2xl hover:bg-blue-50 hover:border-blue-100 transition-all flex items-center justify-center gap-3 active:scale-95">
                       <FileText className="w-5 h-5 group-hover:scale-110 transition-transform" />
@@ -768,7 +770,8 @@ export default function App() {
               </div>
             </div>
           </div>
-        </main >
+        )}
+      </main>
 
       <div id="print-only" className="hidden print:block">
         <DocumentPreview
