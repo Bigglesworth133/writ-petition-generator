@@ -208,16 +208,20 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       <div className="mb-4 text-sm">
         <p className="mb-4 font-normal">IN THE MATTER OF:</p>
         <div className="space-y-6">
-          <div className="px-10">
-            <p className="font-black text-base">{getCauseTitle().pText}</p>
-            <p className="italic text-xs mt-1">... PETITIONER(S)</p>
+          <div className="px-10 flex justify-between items-end">
+            <div className="flex-1 text-center">
+              <p className="font-black text-base">{getCauseTitle().pText}</p>
+            </div>
+            <div className="italic text-xs font-bold w-32 text-right ml-4 whitespace-nowrap">... PETITIONER(S)</div>
           </div>
 
           <div className="font-normal italic text-sm lowercase">Versus</div>
 
-          <div className="px-10">
-            <p className="font-black text-base">{getCauseTitle().rText}</p>
-            <p className="italic text-xs mt-1">... RESPONDENT(S)</p>
+          <div className="px-10 flex justify-between items-end">
+            <div className="flex-1 text-center">
+              <p className="font-black text-base">{getCauseTitle().rText}</p>
+            </div>
+            <div className="italic text-xs font-bold w-32 text-right ml-4 whitespace-nowrap">... RESPONDENT(S)</div>
           </div>
         </div>
       </div>
@@ -431,31 +435,35 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         <div className="text-center font-bold underline mb-10 uppercase text-lg">Memo of Parties</div>
 
         <div className="space-y-8">
-          <div>
-            {data.petitioners.map((pet, i) => (
-              <div key={pet.id} className="mb-6">
-                <p className="font-bold">{i + 1}. {pet.name.toUpperCase()}</p>
-                {pet.authRep && <p className="italic text-sm">Through its Authorised Representative {pet.authRep}</p>}
-                {pet.addresses.map((addr, ai) => <p key={ai} className="pl-6">{addr}</p>)}
-                <p className="pl-6 uppercase">{pet.city} - {pet.pin}, {pet.state}</p>
-              </div>
-            ))}
-            <p className="text-right font-bold italic">...PETITIONER(S)</p>
+          <div className="flex justify-between items-end">
+            <div className="flex-1">
+              {data.petitioners.map((pet, i) => (
+                <div key={pet.id} className="mb-6">
+                  <p className="font-bold">{i + 1}. {pet.name.toUpperCase()}</p>
+                  {pet.authRep && <p className="italic text-sm">Through its Authorised Representative {pet.authRep}</p>}
+                  {pet.addresses.map((addr, ai) => <p key={ai} className="pl-6">{addr}</p>)}
+                  <p className="pl-6 uppercase">{pet.city} - {pet.pin}, {pet.state}</p>
+                </div>
+              ))}
+            </div>
+            <div className="w-40 text-right font-bold italic mb-6">...PETITIONER(S)</div>
           </div>
 
           <div className="text-center font-bold italic py-4">VERSUS</div>
 
-          <div>
-            {data.respondents.map((r, i) => (
-              <div key={r.id} className="mb-6">
-                <p className="font-bold">{i + 1}. {r.name.toUpperCase()}</p>
-                {r.authRep && <p className="italic text-sm">Through its Authorised Representative {r.authRep}</p>}
-                {r.addresses.map((addr, ai) => <p key={ai} className="pl-6">{addr}</p>)}
-                <p className="pl-6 uppercase">{r.city} - {r.pin}, {r.state}</p>
-                {r.email && <p className="pl-6 text-sm">Email: {r.email}</p>}
-              </div>
-            ))}
-            <p className="text-right font-bold italic">...RESPONDENT(S)</p>
+          <div className="flex justify-between items-end">
+            <div className="flex-1">
+              {data.respondents.map((r, i) => (
+                <div key={r.id} className="mb-6">
+                  <p className="font-bold">{i + 1}. {r.name.toUpperCase()}</p>
+                  {r.authRep && <p className="italic text-sm">Through its Authorised Representative {r.authRep}</p>}
+                  {r.addresses.map((addr, ai) => <p key={ai} className="pl-6">{addr}</p>)}
+                  <p className="pl-6 uppercase">{r.city} - {r.pin}, {r.state}</p>
+                  {r.email && <p className="pl-6 text-sm">Email: {r.email}</p>}
+                </div>
+              ))}
+            </div>
+            <div className="w-40 text-right font-bold italic mb-6">...RESPONDENT(S)</div>
           </div>
         </div>
 
