@@ -618,14 +618,14 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
           return (
             <Page key={ann.id} pageNum={pageLabel} actualPageNum={ap}>
               <div className="flex justify-between font-bold mb-10 uppercase">
-                <span>Annexure {getAnnexureTitle(idx)}</span>
+                <span>{getAnnexureTitle(idx)}</span>
               </div>
               <div className="text-center font-bold mb-20 uppercase">
                 A TRUE COPY OF {ann.title}
               </div>
               <div className="border border-black h-[600px] flex items-center justify-center bg-gray-50 overflow-hidden relative">
                 {ann.files && ann.files[0] ? (
-                  ann.files[0].toLowerCase().endsWith('.pdf') ? (
+                  ann.files[0].startsWith('data:application/pdf') || ann.files[0].toLowerCase().endsWith('.pdf') ? (
                     <embed src={ann.files[0]} className="w-full h-full" type="application/pdf" />
                   ) : (
                     <img src={ann.files[0]} className="w-full h-full object-contain" alt={ann.title} />

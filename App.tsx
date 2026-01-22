@@ -218,22 +218,25 @@ export default function App() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const updatedAnnexures = [...formData.annexures];
-    updatedAnnexures[index].files = [file.name]; // Visual feedback
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const dataUrl = reader.result as string;
+      const updatedAnnexures = [...formData.annexures];
+      updatedAnnexures[index].files = [dataUrl]; // Store full data for preview
 
-    // Auto-detect pages if PDF
-    if (file.type === 'application/pdf') {
-      try {
-        const buffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-        updatedAnnexures[index].pageCount = pdf.numPages.toString();
-      } catch (err) {
-        console.error('PDF Read Error:', err);
-        // Fallback or alert if needed
+      // Auto-detect pages if PDF
+      if (file.type === 'application/pdf') {
+        try {
+          const buffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+          updatedAnnexures[index].pageCount = pdf.numPages.toString();
+        } catch (err) {
+          console.error('PDF Read Error:', err);
+        }
       }
-    }
-
-    updateField('annexures', updatedAnnexures);
+      updateField('annexures', updatedAnnexures);
+    };
+    reader.readAsDataURL(file);
   };
 
   const gf = (label: string) => ({
@@ -420,7 +423,7 @@ export default function App() {
                     <TextInput label="UIN" value={formData.courtFeeUin} onChange={v => updateField('courtFeeUin', v)} />
                     <TextInput label="Amount (INR)" value={formData.courtFeeAmount} onChange={v => updateField('courtFeeAmount', v)} />
                     <div className="col-span-2 relative">
-                      <input type="file" id="court-fee-upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'courtFeeAttachment')} />
+                      <input type="file" id="court-fee-upload" className="hidden" accept="image/*,.pdf" onChange={(e) => handleImageUpload(e, 'courtFeeAttachment')} />
                       <label htmlFor="court-fee-upload" className={`border-2 border-dashed rounded-xl p-8 text-center font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${formData.courtFeeAttachment ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
                         {formData.courtFeeAttachment ? <><CheckCircle2 className="w-5 h-5" /> ATTACHED</> : <><Paperclip className="w-5 h-5" /> ATTACH COURT FEE COPY</>}
                       </label>
@@ -523,7 +526,7 @@ export default function App() {
                             {ann.files.length > 0 ? (
                               <>
                                 <CheckCircle2 className="w-4 h-4" />
-                                {ann.files[0]} ({ann.pageCount} pages detected)
+                                PDF ATTACHED ({ann.pageCount} pages detected)
                               </>
                             ) : (
                               <>
@@ -554,7 +557,7 @@ export default function App() {
 
                   <SectionHeader title="Advocates & Letter of Authority" />
                   <div className="mb-6 relative">
-                    <input type="file" id="loa-upload" className="hidden" accept="image/*" onChange={(e) => handleImageUpload(e, 'letterOfAuthorityUpload')} />
+                    <input type="file" id="loa-upload" className="hidden" accept="image/*,.pdf" onChange={(e) => handleImageUpload(e, 'letterOfAuthorityUpload')} />
                     <label htmlFor="loa-upload" className={`border-2 border-dashed rounded-xl p-8 text-center font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${formData.letterOfAuthorityUpload ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
                       {formData.letterOfAuthorityUpload ? <><CheckCircle2 className="w-5 h-5" /> LOA ATTACHED</> : <><Paperclip className="w-5 h-5" /> UPLOAD LETTER OF AUTHORITY</>}
                     </label>
@@ -600,7 +603,7 @@ export default function App() {
 
                   <SectionHeader title="Proof of Service" />
                   <div className="mb-4">
-                    <input type="file" id="pos-upload" className="hidden" accept="image/*" onChange={(e) => {
+                    <input type="file" id="pos-upload" className="hidden" accept="image/*,.pdf" onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
                         const reader = new FileReader();
