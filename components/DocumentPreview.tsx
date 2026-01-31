@@ -2,6 +2,11 @@ import React, { useMemo } from 'react';
 import { Annotation, WritFormData } from '../types';
 import { FORMATTING, HIGH_COURT_DEFAULT, JURISDICTION_DEFAULT, getAnnexureTitle } from '../constants';
 import { Trash2 } from 'lucide-react';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
 
 interface PreviewProps {
   data: WritFormData;
@@ -11,7 +16,49 @@ interface PreviewProps {
   onRemoveAnnotation?: (id: string) => void;
 }
 
+const PDFPageRenderer: React.FC<{ dataUrl: string; pageNumber: number }> = ({ dataUrl, pageNumber }) => {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    let isCancelled = false;
+    const renderPage = async () => {
+      try {
+        const loadingTask = pdfjsLib.getDocument(dataUrl);
+        const pdf = await loadingTask.promise;
+        if (pageNumber > pdf.numPages) return;
+        const page = await pdf.getPage(pageNumber);
+
+        if (isCancelled || !canvasRef.current) return;
+
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+        if (!context) return;
+
+        const viewport = page.getViewport({ scale: 2.0 });
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport,
+        };
+        await page.render(renderContext).promise;
+      } catch (err: any) {
+        console.error("PDF Render Error:", err);
+        if (!isCancelled) setError(err.message);
+      }
+    };
+    renderPage();
+    return () => { isCancelled = true; };
+  }, [dataUrl, pageNumber]);
+
+  if (error) return <div className="text-red-500 text-xs">Error rendering PDF: {error}</div>;
+  return <canvas ref={canvasRef} className="w-full h-auto" />;
+};
+
 export const DocumentPreview: React.FC<PreviewProps> = ({
+
   data,
   reviewMode = false,
   annotations = [],
@@ -609,36 +656,56 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       </Page>
 
       {/* 7. ANNEXURES */}
-      {/* 7. ANNEXURES */}
       <div id="annexure-section">
         {data.annexures.map((ann, idx) => {
           const pageCount = parseInt(ann.pageCount || '1', 10);
-          const pageLabel = renderPagination(pageCount);
+          const pages = [];
 
-          return (
-            <Page key={ann.id} pageNum={pageLabel} actualPageNum={ap}>
-              <div className="flex justify-between font-bold mb-10 uppercase">
-                <span>{getAnnexureTitle(idx)}</span>
-              </div>
-              <div className="text-center font-bold mb-20 uppercase">
-                A TRUE COPY OF {ann.title}
-              </div>
-              <div className="border border-black h-[600px] flex items-center justify-center bg-gray-50 overflow-hidden relative">
-                {ann.files && ann.files[0] ? (
-                  ann.files[0].startsWith('data:application/pdf') || ann.files[0].toLowerCase().endsWith('.pdf') ? (
-                    <embed src={ann.files[0]} className="w-full h-full" type="application/pdf" />
-                  ) : (
-                    <img src={ann.files[0]} className="w-full h-full object-contain" alt={ann.title} />
-                  )
+          for (let subIdx = 1; subIdx <= pageCount; subIdx++) {
+            const currentAp = ++ap;
+            const currentP = ++p;
+
+            pages.push(
+              <Page key={`${ann.id}-${subIdx}`} pageNum={currentP} actualPageNum={currentAp}>
+                {subIdx === 1 ? (
+                  <>
+                    <div className="flex justify-between font-bold mb-10 uppercase">
+                      <span>{getAnnexureTitle(idx)}</span>
+                    </div>
+                    <div className="text-center font-bold mb-10 uppercase">
+                      A TRUE COPY OF {ann.title}
+                    </div>
+                  </>
                 ) : (
-                  <div className="text-center text-gray-400 font-bold italic">
-                    [DOCUMENT: {ann.title} - {pageCount} PAGES]
+                  <div className="flex justify-between font-bold mb-10 uppercase opacity-30">
+                    <span>{getAnnexureTitle(idx)} (Contd.)</span>
                   </div>
                 )}
-              </div>
-              <Signature />
-            </Page>
-          );
+
+                <div className="flex-1">
+                  {ann.files && ann.files[0] ? (
+                    ann.files[0].startsWith('data:application/pdf') ? (
+                      <PDFPageRenderer dataUrl={ann.files[0]} pageNumber={subIdx} />
+                    ) : (
+                      subIdx === 1 ? (
+                        <img src={ann.files[0]} className="w-full h-auto" alt={ann.title} />
+                      ) : (
+                        <div className="text-center text-gray-400 py-20">[CONT. DOCUMENT]</div>
+                      )
+                    )
+                  ) : (
+                    subIdx === 1 && (
+                      <div className="text-center text-gray-400 font-bold italic py-20">
+                        [DOCUMENT: {ann.title} - {pageCount} PAGES]
+                      </div>
+                    )
+                  )}
+                </div>
+                <Signature />
+              </Page>
+            );
+          }
+          return pages;
         })}
       </div>
 
