@@ -42,6 +42,7 @@ const PDFPageRenderer: React.FC<{ dataUrl: string; pageNumber: number }> = ({ da
         const renderContext = {
           canvasContext: context,
           viewport: viewport,
+          canvas: canvas
         };
         await page.render(renderContext).promise;
       } catch (err: any) {
@@ -701,7 +702,6 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
                     )
                   )}
                 </div>
-                <Signature />
               </Page>
             );
           }
