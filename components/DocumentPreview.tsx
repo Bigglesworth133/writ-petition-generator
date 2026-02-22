@@ -258,21 +258,21 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         <p>{getWpShorthand()} NO. _______ OF {data.year}</p>
         {data.petitionType === 'Criminal' && <p>AND<br />CRL.M.A. NO. ______ OF {data.year}</p>}
       </div>
-      <div className="mb-4">
-        <p className="mb-4 font-normal uppercase">IN THE MATTER OF:</p>
+      <div className="mb-4 text-left">
+        <p className="mb-4 font-normal uppercase underline decoration-solid underline-offset-4">IN THE MATTER OF:</p>
         <div className="space-y-6">
-          <div className="px-10 flex justify-between items-end">
-            <div className="flex-1 text-center">
-              <p className="font-black">{getCauseTitle().pText}</p>
+          <div className="px-0 flex justify-between items-start">
+            <div className="flex-1 text-left">
+              <p className="font-normal">{getCauseTitle().pText}</p>
             </div>
             <div className="font-bold w-32 text-right ml-4 whitespace-nowrap">... PETITIONER(S)</div>
           </div>
 
-          <div className="font-normal lowercase">versus</div>
+          <div className="px-0 font-normal lowercase text-center">versus</div>
 
-          <div className="px-10 flex justify-between items-end">
-            <div className="flex-1 text-center">
-              <p className="font-black">{getCauseTitle().rText}</p>
+          <div className="px-0 flex justify-between items-start">
+            <div className="flex-1 text-left">
+              <p className="font-normal">{getCauseTitle().rText}</p>
             </div>
             <div className="font-bold w-32 text-right ml-4 whitespace-nowrap">... RESPONDENT(S)</div>
           </div>
