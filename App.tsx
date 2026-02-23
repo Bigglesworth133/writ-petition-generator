@@ -24,8 +24,6 @@ import * as pdfjsLib from 'pdfjs-dist';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 const INITIAL_DATA: WritFormData = {
-  highCourt: "IN THE HIGH COURT OF DELHI AT NEW DELHI",
-  jurisdiction: "EXTRA ORDINARY CIVIL WRIT JURISDICTION",
   petitionType: 'Civil',
   year: '2025',
   petitioners: [{ id: '1', name: '', addresses: [''], city: '', pin: '', state: '' }],
@@ -37,10 +35,10 @@ const INITIAL_DATA: WritFormData = {
   letterOfAuthorityUpload: null,
   location: 'New Delhi',
   filingDate: new Date().toLocaleDateString('en-GB').replace(/\//g, '.'),
-  advocates: [{ id: '1', name: '', enrolmentNumber: '', addresses: [''], phoneNumbers: [''], email: '' }],
+  advocates: [{ id: '1', name: '', enrolmentNumber: '' }],
   addresses: [''],
   phoneNumbers: [''],
-  userEmail: '',
+  emails: [''],
   urgentPinCode: '110003',
   urgentContent: 'The present matter involves a direct violation of constitutional rights and requires urgent adjudication...',
   certificateContent: 'Certified that the petition contains no false or misleading statements.',
@@ -432,8 +430,6 @@ export default function App() {
 
                   <SectionHeader title="Introduction (Memo of Parties)" />
                   <div className="grid grid-cols-2 gap-4">
-                    <TextInput label="High Court" value={formData.highCourt} onChange={v => updateField('highCourt', v)} {...gf('High Court')} />
-                    <TextInput label="Jurisdiction" value={formData.jurisdiction} onChange={v => updateField('jurisdiction', v)} {...gf('Jurisdiction')} />
                     <SelectInput label="Type" value={formData.petitionType} options={[{ label: 'Civil', value: 'Civil' }, { label: 'Criminal', value: 'Criminal' }]} onChange={v => updateField('petitionType', v)} {...gf('Type')} />
                     <TextInput label="Year" value={formData.year} onChange={v => updateField('year', v)} {...gf('Year')} />
                   </div>
@@ -562,7 +558,7 @@ export default function App() {
                       {formData.letterOfAuthorityUpload ? <><CheckCircle2 className="w-5 h-5" /> LOA ATTACHED</> : <><Paperclip className="w-5 h-5" /> UPLOAD LETTER OF AUTHORITY</>}
                     </label>
                   </div>
-                  <RepeatableBlock title="Advocates" onAdd={() => updateField('advocates', [...formData.advocates, { id: Date.now().toString(), name: '', enrolmentNumber: '', addresses: [''], phoneNumbers: [''], email: '' }])}>
+                  <RepeatableBlock title="Advocates" onAdd={() => updateField('advocates', [...formData.advocates, { id: Date.now().toString(), name: '', enrolmentNumber: '' }])}>
                     {formData.advocates.map((adv, i) => (
                       <div key={adv.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200 mb-4">
                         {formData.advocates.length > 1 && (
@@ -571,35 +567,46 @@ export default function App() {
                         <div className="grid grid-cols-2 gap-4">
                           <TextInput label={`Advocate #${i + 1} Name`} value={adv.name} onChange={v => { const up = [...formData.advocates]; up[i].name = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Name`)} />
                           <TextInput label="Enrolment Number" value={adv.enrolmentNumber} onChange={v => { const up = [...formData.advocates]; up[i].enrolmentNumber = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Enrolment`)} />
-                          <div className="col-span-2">
-                            <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Addresses</p>
-                            {adv.addresses.map((addr, ai) => (
-                              <div key={ai} className="flex gap-2 mb-2">
-                                <div className="flex-1"><TextInput label={`Address ${ai + 1}`} value={addr} onChange={v => { const up = [...formData.advocates]; up[i].addresses[ai] = v; updateField('advocates', up); }} /></div>
-                                <button onClick={() => { const up = [...formData.advocates]; up[i].addresses.splice(ai, 1); updateField('advocates', up); }} className="text-gray-300 hover:text-red-500 mt-6"><Trash2 className="w-4 h-4" /></button>
-                              </div>
-                            ))}
-                            <button onClick={() => { const up = [...formData.advocates]; up[i].addresses.push(''); updateField('advocates', up); }} className="text-[10px] font-bold text-blue-600 uppercase">+ Add Address</button>
-                          </div>
-                          <div className="col-span-2">
-                            <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Phone Numbers</p>
-                            {adv.phoneNumbers.map((phone, pi) => (
-                              <div key={pi} className="flex gap-2 items-center mb-2">
-                                <div className="flex-1"><TextInput label={`Phone ${pi + 1}`} value={phone} onChange={v => { const up = [...formData.advocates]; up[i].phoneNumbers[pi] = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Phone #${pi + 1}`)} /></div>
-                                {adv.phoneNumbers.length > 1 && (
-                                  <button onClick={() => { const up = [...formData.advocates]; up[i].phoneNumbers = up[i].phoneNumbers.filter((_, idx) => idx !== pi); updateField('advocates', up); }} className="text-gray-300 hover:text-red-500 mt-2"><Trash2 className="w-4 h-4" /></button>
-                                )}
-                              </div>
-                            ))}
-                            <button onClick={() => { const up = [...formData.advocates]; up[i].phoneNumbers.push(''); updateField('advocates', up); }} className="text-[10px] font-bold text-blue-600 uppercase">+ Add Phone</button>
-                          </div>
-                          <div className="col-span-2">
-                            <TextInput label="Email" type="email" value={adv.email} onChange={v => { const up = [...formData.advocates]; up[i].email = v; updateField('advocates', up); }} {...gf(`Advocate #${i + 1} Email`)} />
-                          </div>
                         </div>
                       </div>
                     ))}
                   </RepeatableBlock>
+
+                  <SectionHeader title="Advocate Contact Information" />
+                  <div className="bg-white p-6 rounded-2xl border border-gray-200 mb-6 space-y-6 shadow-sm">
+                    <div>
+                      <p className="text-sm font-bold text-gray-700 mb-3 uppercase">Addresses</p>
+                      {formData.addresses.map((addr, ai) => (
+                        <div key={ai} className="flex gap-2 mb-2 items-center">
+                          <div className="flex-1"><TextInput label={`Address ${ai + 1}`} value={addr} onChange={v => { const up = [...formData.addresses]; up[ai] = v; updateField('addresses', up); }} /></div>
+                          <button onClick={() => { const up = [...formData.addresses]; up.splice(ai, 1); updateField('addresses', up); }} className="text-gray-300 hover:text-red-500 mt-6"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => { const up = [...formData.addresses, '']; updateField('addresses', up); }} className="text-xs font-bold text-blue-600 uppercase">+ Add Address</button>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-bold text-gray-700 mb-3 uppercase">Phone Numbers</p>
+                      {formData.phoneNumbers.map((phone, pi) => (
+                        <div key={pi} className="flex gap-2 items-center mb-2">
+                          <div className="flex-1"><TextInput label={`Phone ${pi + 1}`} value={phone} onChange={v => { const up = [...formData.phoneNumbers]; up[pi] = v; updateField('phoneNumbers', up); }} /></div>
+                          <button onClick={() => { const up = formData.phoneNumbers.filter((_, idx) => idx !== pi); updateField('phoneNumbers', up); }} className="text-gray-300 hover:text-red-500 mt-2"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => { const up = [...formData.phoneNumbers, '']; updateField('phoneNumbers', up); }} className="text-xs font-bold text-blue-600 uppercase">+ Add Phone</button>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-bold text-gray-700 mb-3 uppercase">Emails</p>
+                      {formData.emails.map((email, ei) => (
+                        <div key={ei} className="flex gap-2 items-center mb-2">
+                          <div className="flex-1"><TextInput type="email" label={`Email ${ei + 1}`} value={email} onChange={v => { const up = [...formData.emails]; up[ei] = v; updateField('emails', up); }} /></div>
+                          <button onClick={() => { const up = formData.emails.filter((_, idx) => idx !== ei); updateField('emails', up); }} className="text-gray-300 hover:text-red-500 mt-2"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => { const up = [...formData.emails, '']; updateField('emails', up); }} className="text-xs font-bold text-blue-600 uppercase">+ Add Email</button>
+                    </div>
+                  </div>
 
                   <SectionHeader title="Proof of Service" />
                   <div className="mb-4">

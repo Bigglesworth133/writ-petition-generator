@@ -24,9 +24,6 @@ export interface Advocate {
   id: string;
   name: string;
   enrolmentNumber: string;
-  addresses: string[];
-  phoneNumbers: string[];
-  email: string;
 }
 
 export interface Annexure {
@@ -78,8 +75,6 @@ export interface Annotation {
 
 export interface WritFormData {
   // Introduction
-  highCourt: string;
-  jurisdiction: string;
   petitionType: 'Civil' | 'Criminal';
   year: string;
   petitioners: Petitioner[];
@@ -98,7 +93,7 @@ export interface WritFormData {
   advocates: Advocate[];
   addresses: string[];
   phoneNumbers: string[];
-  userEmail: string;
+  emails: string[];
 
   // Urgent Application
   urgentPinCode: string;
