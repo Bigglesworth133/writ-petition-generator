@@ -3,6 +3,7 @@ import { Annotation, WritFormData } from '../types';
 import { FORMATTING, getAnnexureTitle } from '../constants';
 import { Trash2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
+import DOMPurify from 'dompurify';
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -89,13 +90,13 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     }
   };
 
-  const Page = ({ children, className = "", pageNum, actualPageNum, key }: { children: React.ReactNode, className?: string, pageNum?: number | string, actualPageNum: number, key?: React.Key }) => (
+  const Page = ({ children, className = "", pageNum, actualPageNum, key, noPadding = false }: { children: React.ReactNode, className?: string, pageNum?: number | string, actualPageNum: number, key?: React.Key, noPadding?: boolean }) => (
     <div
       onClick={(e) => handlePageClick(e, actualPageNum)}
       key={key}
       className={`bg-white shadow-lg mx-auto mb-10 print:mb-0 print:shadow-none print:break-after-page relative ${className} ${reviewMode ? 'cursor-crosshair hover:ring-2 hover:ring-blue-400 transition-all' : ''}`}
-      style={{ width: '210mm', minHeight: '297mm', padding: `${FORMATTING.MARGINS.TOP} ${FORMATTING.MARGINS.RIGHT} ${FORMATTING.MARGINS.BOTTOM} ${FORMATTING.MARGINS.LEFT}` }}>
-      <div className="times-new-roman text-justify" style={{ fontSize: '14pt', lineHeight: '1.5', color: 'black' }}>
+      style={{ width: '210mm', minHeight: '297mm', padding: noPadding ? '0' : `${FORMATTING.MARGINS.TOP} ${FORMATTING.MARGINS.RIGHT} ${FORMATTING.MARGINS.BOTTOM} ${FORMATTING.MARGINS.LEFT}` }}>
+      <div className={`times-new-roman text-justify ${noPadding ? 'w-full h-full absolute inset-0 display-flex flex-col items-center justify-center' : ''}`} style={{ fontSize: '14pt', lineHeight: '1.5', color: 'black' }}>
         {children}
       </div>
       <PageNumber num={pageNum} />
@@ -160,7 +161,33 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     items.push({ title: 'Notice of Motion', p: p++ });
 
     // 6. Court Fees
-    items.push({ title: 'Court Fees', p: p++ });
+    const courtFeeOption = data.courtFeeOption || 'And';
+
+    // Track pages specifically used by Court Fees
+    let courtFeeStartPage = p;
+    let courtFeeEndPage = p;
+
+    if (courtFeeOption === 'And' || courtFeeOption === 'Or (Table Only)') {
+      courtFeeEndPage = p;
+      p++;
+    }
+
+    if ((courtFeeOption === 'And' || courtFeeOption === 'Or (Attachment Only)') && data.courtFeeAttachment) {
+      if (data.courtFeeAttachment.toLowerCase().endsWith('.pdf') || data.courtFeeAttachment.startsWith('data:application/pdf')) {
+        const attachPages = parseInt(data.courtFeeAttachmentPages || '1', 10);
+        courtFeeEndPage = p + attachPages - 1;
+        p += attachPages;
+      } else {
+        courtFeeEndPage = p;
+        p++;
+      }
+    }
+
+    // Push the entire Court Fee block into the index
+    items.push({
+      title: 'Court Fees',
+      p: courtFeeStartPage === courtFeeEndPage ? courtFeeStartPage : `${courtFeeStartPage}-${courtFeeEndPage}`
+    });
 
     // 7. Memo of Parties
     items.push({ title: 'Memo of Parties', p: p++ });
@@ -267,7 +294,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       <div className="mb-4 text-left">
         <p className="mb-4 font-normal uppercase underline decoration-solid underline-offset-4">IN THE MATTER OF:</p>
         <div className="space-y-6">
-          <div className="px-0 flex justify-between items-start">
+          <div className="px-0 flex justify-between items-end">
             <div className="flex-1 text-left">
               <p className="font-normal">{getCauseTitle().pText}</p>
             </div>
@@ -276,7 +303,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
 
           <div className="px-0 font-normal lowercase text-center">versus</div>
 
-          <div className="px-0 flex justify-between items-start">
+          <div className="px-0 flex justify-between items-end">
             <div className="flex-1 text-left">
               <p className="font-normal">{getCauseTitle().rText}</p>
             </div>
@@ -492,30 +519,56 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       </Page>
 
       {/* 4. COURT FEES (New) */}
-      <Page pageNum={++p} actualPageNum={++ap}>
-        <Header />
-        <div className="text-center font-bold mb-10 uppercase underline">Court Fees</div>
-        <div className="border-2 border-dashed border-gray-300 h-[400px] flex items-center justify-center text-gray-400 font-bold italic mb-10 overflow-hidden">
-          {data.courtFeeAttachment ? (
-            <img src={data.courtFeeAttachment} className="w-full h-full object-contain" alt="Court Fee" />
-          ) : (
+      {(data.courtFeeOption === 'And' || data.courtFeeOption === 'Or (Table Only)' || !data.courtFeeOption) && (
+        <Page pageNum={++p} actualPageNum={++ap}>
+          <Header />
+          <div className="text-center font-bold mb-10 uppercase underline">Court Fees</div>
+          <table className="w-full border-collapse border border-black uppercase mt-10">
+            <tbody>
+              <tr className="border border-black">
+                <td className="border border-black p-4 font-bold w-1/3">UIN/Reference No.</td>
+                <td className="border border-black p-4">{data.courtFeeUin || "____________________"}</td>
+              </tr>
+              <tr className="border border-black">
+                <td className="border border-black p-4 font-bold">Amount Paid</td>
+                <td className="border border-black p-4">RS. {data.courtFeeAmount} /-</td>
+              </tr>
+            </tbody>
+          </table>
+          <Signature />
+        </Page>
+      )}
+
+      {(data.courtFeeOption === 'And' || data.courtFeeOption === 'Or (Attachment Only)' || !data.courtFeeOption) && data.courtFeeAttachment && (
+        data.courtFeeAttachment.toLowerCase().endsWith('.pdf') || data.courtFeeAttachment.startsWith('data:application/pdf') ? (
+          Array.from({ length: parseInt(data.courtFeeAttachmentPages || '1', 10) }).map((_, idx) => (
+            <Page key={`court-fee-pdf-${idx}`} pageNum={++p} actualPageNum={++ap} noPadding={true}>
+              <div className="absolute top-[1.5in] w-full text-center font-bold uppercase underline z-10">Court Fees</div>
+              <div className="w-full h-full flex items-center justify-center">
+                <PDFPageRenderer dataUrl={data.courtFeeAttachment!} pageNumber={idx + 1} />
+              </div>
+            </Page>
+          ))
+        ) : (
+          <Page pageNum={++p} actualPageNum={++ap} noPadding={true}>
+            <div className="absolute top-[1.5in] w-full text-center font-bold uppercase underline z-10">Court Fees</div>
+            <div className="w-full h-full flex items-center justify-center">
+              <img src={data.courtFeeAttachment} className="w-full h-full object-contain" alt="Court Fee" />
+            </div>
+          </Page>
+        )
+      )}
+
+      {(data.courtFeeOption === 'And' || data.courtFeeOption === 'Or (Attachment Only)' || !data.courtFeeOption) && !data.courtFeeAttachment && (
+        <Page pageNum={++p} actualPageNum={++ap}>
+          <Header />
+          <div className="text-center font-bold mb-10 uppercase underline">Court Fees</div>
+          <div className="border-2 border-dashed border-gray-300 h-[600px] flex items-center justify-center text-gray-400 font-bold italic mb-10 overflow-hidden">
             <span>[COURT FEE CERTIFICATE / E-RECEIPT TO BE ATTACHED HERE]</span>
-          )}
-        </div>
-        <table className="w-full border-collapse border border-black uppercase">
-          <tbody>
-            <tr className="border border-black">
-              <td className="border border-black p-4 font-bold w-1/3">Amount Paid</td>
-              <td className="border border-black p-4">RS. {data.courtFeeAmount} /-</td>
-            </tr>
-            <tr className="border border-black">
-              <td className="border border-black p-4 font-bold">UIN/Reference No.</td>
-              <td className="border border-black p-4">{data.courtFeeUin || "____________________"}</td>
-            </tr>
-          </tbody>
-        </table>
-        <Signature />
-      </Page>
+          </div>
+          <Signature />
+        </Page>
+      )}
 
       {/* 3A. MEMO OF PARTIES */}
       <Page pageNum={++p} actualPageNum={++ap}>
@@ -523,10 +576,10 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         <div className="text-center font-bold mb-10 uppercase underline">Memo of Parties</div>
 
         <div className="space-y-8">
-          <div>
-            <div>
-              {data.petitioners.map((pet, i) => (
-                <div key={pet.id} className="mb-6 text-left">
+          <div className="flex flex-col">
+            {data.petitioners.map((pet, i) => (
+              <div key={pet.id} className={`flex justify-between items-end ${i === data.petitioners.length - 1 ? '' : 'mb-6'}`}>
+                <div className="flex-1 text-left">
                   <p className="font-bold">{i + 1}. {pet.name.toUpperCase()}</p>
                   {pet.authRep && (
                     <div className="mt-2 text-left">
@@ -536,17 +589,19 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
                   <p className="whitespace-pre-wrap mt-2">{pet.address}</p>
                   {pet.email && <p className="normal-case">{pet.email}</p>}
                 </div>
-              ))}
-            </div>
-            <div className="text-right font-bold mt-2">...{data.petitioners.length > 1 ? 'PETITIONERS' : 'PETITIONER'}</div>
+                <div className="font-bold w-40 text-right ml-4 whitespace-nowrap">
+                  ...{data.petitioners.length > 1 ? `PETITIONER ${i + 1}` : 'PETITIONER'}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="text-center font-bold py-4">VERSUS</div>
 
-          <div>
-            <div>
-              {data.respondents.map((r, i) => (
-                <div key={r.id} className="mb-6 text-left">
+          <div className="flex flex-col">
+            {data.respondents.map((r, i) => (
+              <div key={r.id} className={`flex justify-between items-end ${i === data.respondents.length - 1 ? '' : 'mb-6'}`}>
+                <div className="flex-1 text-left">
                   <p className="font-bold">{i + 1}. {r.name.toUpperCase()}</p>
                   {r.authRep && (
                     <div className="mt-2 text-left">
@@ -556,9 +611,11 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
                   <p className="whitespace-pre-wrap mt-2">{r.address}</p>
                   {r.email && <p className="normal-case">{r.email}</p>}
                 </div>
-              ))}
-            </div>
-            <div className="text-right font-bold mt-2">...{data.respondents.length > 1 ? 'RESPONDENTS' : 'RESPONDENT'}</div>
+                <div className="font-bold w-40 text-right ml-4 whitespace-nowrap">
+                  ...{data.respondents.length > 1 ? `RESPONDENT ${i + 1}` : 'RESPONDENT'}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -585,14 +642,16 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             <div className="text-center font-bold mb-6 uppercase">Synopsis</div>
 
             {data.preSynopsisContent && (
-              <div className="whitespace-pre-wrap mb-10 text-justify">
-                {data.preSynopsisContent}
-              </div>
+              <div
+                className="rich-text-content ql-editor mb-10 text-justify w-full"
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.preSynopsisContent, { ADD_ATTR: ['class', 'style', 'data-list'] }) }}
+              />
             )}
 
-            <div className="whitespace-pre-wrap mb-10 text-justify">
-              <FormattedText text={data.synopsisContent} />
-            </div>
+            <div
+              className="rich-text-content ql-editor mb-10 text-justify w-full"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(data.synopsisContent, { ADD_ATTR: ['class', 'style', 'data-list'] }) }}
+            />
             <div className="text-center font-bold mb-6 uppercase">List of Dates</div>
             <table className="w-full border-collapse border border-black">
               <thead>
@@ -633,7 +692,6 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             </div>
             <div className="font-bold mb-6">MOST RESPECTFULLY SHOWETH:</div>
             <div className="whitespace-pre-wrap mb-10">
-              <p className="mb-4">1. The present Writ Petition is being filed by the Petitioner seeking the kind indulgence of this Hon'ble Court under Article 226/227 of the Constitution of India.</p>
               {data.petitionShoweth}
             </div>
 
@@ -654,14 +712,11 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             </div>
 
             <div className="font-bold mb-6 uppercase">Prayer:</div>
-            <div className="mb-6">
-              IN THE LIGHT OF THE FACTS AND CIRCUMSTANCES STATED HEREIN ABOVE...
+            <div className="mb-6 uppercase">
+              IN THE LIGHT OF THE FACTS AND CIRCUMSTANCES STATED HEREINABOVE, IT IS MOST HUMBLY PRAYED THAT THIS HON'BLE COURT MAY BE GRACIOUSLY PLEASED TO:
             </div>
-            <div className="space-y-4 mb-10">
-              <div className="flex gap-4 pl-10">
-                <span>(a)</span>
-                <div className="flex-1"><FormattedText text={data.petitionPrayers || "Issue an appropriate writ..."} /></div>
-              </div>
+            <div className="space-y-4 mb-10 text-justify">
+              <FormattedText text={data.petitionPrayers} />
             </div>
             <Signature />
           </Page>

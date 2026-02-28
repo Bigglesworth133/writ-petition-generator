@@ -103,6 +103,8 @@ export interface WritFormData {
   courtFeeUin: string;
   courtFeeAmount: string;
   courtFeeAttachment: string | null;
+  courtFeeAttachmentPages: string | null;
+  courtFeeOption?: 'And' | 'Or (Table Only)' | 'Or (Attachment Only)';
 
   // Synopsis
   writTitleExtension: string;

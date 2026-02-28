@@ -12,7 +12,7 @@ import {
   NoteEntry,
   Reply
 } from './types';
-import { TextInput, SectionHeader, CollapsibleSection, RepeatableBlock, SelectInput } from './components/FormFields';
+import { TextInput, SectionHeader, CollapsibleSection, RepeatableBlock, SelectInput, RichTextInput } from './components/FormFields';
 import { DocumentPreview } from './components/DocumentPreview';
 import { supabase } from './lib/supabase';
 import { CheckCircle, FileText, Send, Printer, AlertTriangle, Trash2, Mail, Gavel, Plus, Paperclip, MessageSquare, StickyNote, Download as DownloadIcon, DownloadCloud, Edit, CornerUpRight, CheckCircle2, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
@@ -51,6 +51,8 @@ const INITIAL_DATA: WritFormData = {
   courtFeeUin: '',
   courtFeeAmount: '500',
   courtFeeAttachment: null,
+  courtFeeAttachmentPages: null,
+  courtFeeOption: 'And',
   writTitleExtension: '',
   preSynopsisContent: '',
   synopsisContent: '',
@@ -271,12 +273,23 @@ export default function App() {
     setIsSuccess(true);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof WritFormData) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof WritFormData) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
+      reader.onloadend = async () => {
         updateField(fieldName, reader.result as string); // base64
+
+        // Auto-detect pages if PDF and field is court fee
+        if (file.type === 'application/pdf' && fieldName === 'courtFeeAttachment') {
+          try {
+            const buffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+            updateField('courtFeeAttachmentPages', pdf.numPages.toString());
+          } catch (err) {
+            console.error('PDF Read Error:', err);
+          }
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -524,6 +537,67 @@ export default function App() {
                     {/* <TextInput label="Petition Through" value={formData.petitionDescription} onChange={v => updateField('petitionDescription', v)} {...gf('Petition Through')} /> */}
                   </CollapsibleSection>
 
+                  <CollapsibleSection title="Court Fee" defaultOpen={false}>
+                    <div className="mb-4">
+                      <SelectInput
+                        label="Display Options"
+                        value={formData.courtFeeOption || 'And'}
+                        options={[
+                          { label: 'Table & Attachment', value: 'And' },
+                          { label: 'Only Table', value: 'Or (Table Only)' },
+                          { label: 'Only Attachment', value: 'Or (Attachment Only)' }
+                        ]}
+                        onChange={v => updateField('courtFeeOption', v)}
+                      />
+                    </div>
+
+                    {formData.courtFeeOption !== 'Or (Attachment Only)' && (
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <TextInput label="UIN" value={formData.courtFeeUin} onChange={v => updateField('courtFeeUin', v)} />
+                        <TextInput label="Amount (INR)" value={formData.courtFeeAmount} onChange={v => updateField('courtFeeAmount', v)} />
+                      </div>
+                    )}
+
+                    {formData.courtFeeOption !== 'Or (Table Only)' && (
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="relative">
+                          <input type="file" id="court-fee-upload" className="hidden" accept="image/*,.pdf" onChange={(e) => handleImageUpload(e, 'courtFeeAttachment')} />
+                          <label htmlFor="court-fee-upload" className={`border-2 border-dashed rounded-xl p-8 text-center font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${formData.courtFeeAttachment ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
+                            {formData.courtFeeAttachment ? <><CheckCircle2 className="w-5 h-5" /> ATTACHED</> : <><Paperclip className="w-5 h-5" /> ATTACH COURT FEE COPY</>}
+                          </label>
+                        </div>
+                      </div>
+                    )}
+                  </CollapsibleSection>
+
+                  <CollapsibleSection title="Synopsis & List of Dates" defaultOpen={false}>
+                    <div className="mb-4">
+                      <p className="text-sm font-bold text-gray-500 mb-2 uppercase">Writ Title</p>
+                      <div className="bg-gray-50 rounded-xl overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-blue-400">
+                        <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 text-gray-600 font-bold text-sm text-center lg:text-left">
+                          WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="e.g. SEEKING A WRIT OF CERTIORARI..."
+                          className="w-full px-4 py-3 bg-transparent outline-none uppercase font-bold text-sm"
+                          value={formData.writTitleExtension}
+                          onChange={e => updateField('writTitleExtension', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <RichTextInput label="Preliminary Statement (Optional)" value={formData.preSynopsisContent} onChange={v => updateField('preSynopsisContent', v)} {...gf('Pre-Synopsis')} />
+                    <RichTextInput label="Synopsis Content" value={formData.synopsisContent} onChange={v => updateField('synopsisContent', v)} {...gf('Synopsis')} />
+                    <RepeatableBlock title="List of Dates" onAdd={() => updateField('dateList', [...formData.dateList, { id: Date.now().toString(), dates: [''], event: '' }])}>
+                      {formData.dateList.map((d, i) => (
+                        <div key={d.id} className="flex gap-2 items-start bg-white p-3 rounded-xl shadow-sm">
+                          <div className="w-32"><TextInput label="Date" value={d.dates[0]} onChange={v => { const up = [...formData.dateList]; up[i].dates = [v]; updateField('dateList', up); }} /></div>
+                          <div className="flex-1"><TextInput label="Event" value={d.event} onChange={v => { const up = [...formData.dateList]; up[i].event = v; updateField('dateList', up); }} /></div>
+                        </div>
+                      ))}
+                    </RepeatableBlock>
+                  </CollapsibleSection>
+
                   <CollapsibleSection title="Letter of Authority" defaultOpen={false}>
                     <div className="relative">
                       <input type="file" id="loa-upload" className="hidden" accept="image/*,.pdf" onChange={(e) => handleImageUpload(e, 'letterOfAuthorityUpload')} />
@@ -542,52 +616,8 @@ export default function App() {
                     </button>
                   </div>
 
-
-                  <CollapsibleSection title="Court Fee" defaultOpen={false}>
-                    <div className="grid grid-cols-2 gap-4">
-                      <TextInput label="UIN" value={formData.courtFeeUin} onChange={v => updateField('courtFeeUin', v)} />
-                      <TextInput label="Amount (INR)" value={formData.courtFeeAmount} onChange={v => updateField('courtFeeAmount', v)} />
-                      <div className="col-span-2 relative">
-                        <input type="file" id="court-fee-upload" className="hidden" accept="image/*,.pdf" onChange={(e) => handleImageUpload(e, 'courtFeeAttachment')} />
-                        <label htmlFor="court-fee-upload" className={`border-2 border-dashed rounded-xl p-8 text-center font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${formData.courtFeeAttachment ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400 hover:bg-gray-50'}`}>
-                          {formData.courtFeeAttachment ? <><CheckCircle2 className="w-5 h-5" /> ATTACHED</> : <><Paperclip className="w-5 h-5" /> ATTACH COURT FEE COPY</>}
-                        </label>
-                      </div>
-                    </div>
-                  </CollapsibleSection>
-
-
-
-                  <CollapsibleSection title="Synopsis & List of Dates" defaultOpen={false}>
-                    <div className="mb-4">
-                      <p className="text-sm font-bold text-gray-500 mb-2 uppercase">Writ Title</p>
-                      <div className="bg-gray-50 rounded-xl overflow-hidden border border-gray-200 focus-within:ring-2 focus-within:ring-blue-400 focus-within:border-blue-400">
-                        <div className="bg-gray-100 px-4 py-3 border-b border-gray-200 text-gray-600 font-bold text-sm text-center lg:text-left">
-                          WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="e.g. SEEKING A WRIT OF CERTIORARI..."
-                          className="w-full px-4 py-3 bg-transparent outline-none uppercase font-bold text-sm"
-                          value={formData.writTitleExtension}
-                          onChange={e => updateField('writTitleExtension', e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <TextInput label="Preliminary Statement (Optional)" multiline value={formData.preSynopsisContent} onChange={v => updateField('preSynopsisContent', v)} {...gf('Pre-Synopsis')} />
-                    <TextInput label="Synopsis Content" multiline value={formData.synopsisContent} onChange={v => updateField('synopsisContent', v)} {...gf('Synopsis')} />
-                    <RepeatableBlock title="List of Dates" onAdd={() => updateField('dateList', [...formData.dateList, { id: Date.now().toString(), dates: [''], event: '' }])}>
-                      {formData.dateList.map((d, i) => (
-                        <div key={d.id} className="flex gap-2 items-start bg-white p-3 rounded-xl shadow-sm">
-                          <div className="w-32"><TextInput label="Date" value={d.dates[0]} onChange={v => { const up = [...formData.dateList]; up[i].dates = [v]; updateField('dateList', up); }} /></div>
-                          <div className="flex-1"><TextInput label="Event" value={d.event} onChange={v => { const up = [...formData.dateList]; up[i].event = v; updateField('dateList', up); }} /></div>
-                        </div>
-                      ))}
-                    </RepeatableBlock>
-                  </CollapsibleSection>
-
                   <CollapsibleSection title="The Writ Petition" defaultOpen={false}>
-                    <TextInput label="Header / Showeth" multiline value={formData.petitionShoweth} onChange={v => updateField('petitionShoweth', v)} {...gf('Header / Showeth')} />
+                    <TextInput label="Header / Showeth" multiline placeholder="1. The present Writ Petition seeks to..." value={formData.petitionShoweth} onChange={v => updateField('petitionShoweth', v)} {...gf('Header / Showeth')} />
                     <TextInput label="Facts" multiline value={formData.petitionFacts} onChange={v => updateField('petitionFacts', v)} {...gf('Facts')} />
                     <TextInput label="Grounds" multiline value={formData.petitionGrounds} onChange={v => updateField('petitionGrounds', v)} {...gf('Grounds')} />
                     <TextInput label="Prayers" multiline value={formData.petitionPrayers} onChange={v => updateField('petitionPrayers', v)} {...gf('Prayers')} />

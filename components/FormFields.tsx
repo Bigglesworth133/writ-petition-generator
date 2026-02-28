@@ -1,6 +1,12 @@
 
-import React, { memo, useState, useRef } from 'react';
-import { MessageSquare, Trash2, Edit, CheckCircle2, CornerUpRight, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
+import React, { memo, useState, useRef, useMemo } from 'react';
+import { MessageSquare, Trash2, Edit, CheckCircle2, CornerUpRight, ChevronDown, ChevronUp, CheckCircle, FileText, Paperclip } from 'lucide-react';
+import ReactQuill, { Quill } from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
+
+// Inject custom icons into Quill
+const icons = Quill.import('ui/icons') as any;
+icons['customTable'] = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="3" x2="21" y1="15" y2="15"/><line x1="9" x2="9" y1="9" y2="21"/><line x1="15" x2="15" y1="9" y2="21"/></svg>`;
 
 interface InputProps {
   label: string;
@@ -147,6 +153,89 @@ export const TextInput = memo(({
           placeholder={placeholder}
         />
       )}
+    </div>
+  );
+});
+
+export const RichTextInput = memo(({
+  label,
+  value,
+  onChange,
+  placeholder,
+  description,
+  reviewMode,
+  onAddAnnotation,
+  onRemoveAnnotation,
+  onEditAnnotation,
+  onToggleResolve,
+  onAddReply,
+  annotations
+}: InputProps) => {
+  const modules = useMemo(() => ({
+    toolbar: {
+      container: [
+        ['bold', 'italic', 'underline'],
+        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'align': [] }],
+        ['customTable'],
+        ['clean']
+      ],
+      handlers: {
+        customTable: function (this: any) {
+          const rows = prompt("Enter number of rows:", "3");
+          if (!rows) return;
+          const cols = prompt("Enter number of columns:", "3");
+          if (!cols) return;
+
+          const tableModule = this.quill.getModule('table');
+          if (tableModule) {
+            tableModule.insertTable(parseInt(rows, 10), parseInt(cols, 10));
+          }
+        }
+      }
+    },
+    table: true
+  }), []);
+
+  return (
+    <div className="mb-5 relative group">
+      <div className="flex justify-between items-baseline mb-1">
+        <label className="block text-sm font-bold text-gray-800">{label}</label>
+        <div className="flex items-center gap-2">
+          {description && <span className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">{description}</span>}
+          {reviewMode && annotations && (
+            <FieldComments
+              annotations={annotations}
+              onRemove={onRemoveAnnotation}
+              onEdit={onEditAnnotation}
+              onToggleResolve={onToggleResolve}
+              onAddReply={onAddReply}
+            />
+          )}
+          {reviewMode && onAddAnnotation && (
+            <button
+              onClick={() => {
+                const text = prompt(`Comment on ${label}:`);
+                if (text) onAddAnnotation(text);
+              }}
+              className="p-1 hover:bg-blue-50 text-blue-400 hover:text-blue-600 rounded transition-colors"
+              title="Comment on this field"
+            >
+              <MessageSquare className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="bg-white border text-base border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all duration-200">
+        <ReactQuill
+          theme="snow"
+          value={value}
+          onChange={onChange}
+          modules={modules}
+          placeholder={placeholder || 'Start typing...'}
+          className="custom-quill border-none"
+        />
+      </div>
     </div>
   );
 });
