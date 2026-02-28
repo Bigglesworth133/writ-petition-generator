@@ -1,24 +1,13 @@
-
-export interface Petitioner {
+export interface Party {
   id: string;
   name: string;
-  authRep?: string;
-  addresses: string[];
-  city: string;
-  pin: string;
-  state: string;
-}
-
-export interface Respondent {
-  id: string;
-  name: string;
-  authRep?: string;
-  addresses: string[];
-  city: string;
-  pin: string;
-  state: string;
+  address: string;
   email?: string;
+  authRep?: string;
 }
+
+export interface Petitioner extends Party { }
+export interface Respondent extends Party { }
 
 export interface Advocate {
   id: string;
@@ -116,7 +105,7 @@ export interface WritFormData {
   courtFeeAttachment: string | null;
 
   // Synopsis
-  synopsisDescription: string;
+  writTitleExtension: string;
   preSynopsisContent: string;
   synopsisContent: string;
 
@@ -124,7 +113,6 @@ export interface WritFormData {
   dateList: DateEntry[];
 
   // Petition
-  petitionDescriptionMain: string;
   petitionShoweth: string;
   petitionFacts: string;
   petitionGrounds: string;
@@ -145,4 +133,5 @@ export interface WritFormData {
   // Form Config
   includeListingProforma: boolean;
   includeCertificate: boolean;
+  includeIndexNotes: boolean;
 }

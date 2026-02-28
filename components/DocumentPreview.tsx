@@ -133,79 +133,87 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
   // Auto-indexing logic with dynamic page length estimation
   const indexItems = useMemo(() => {
     let p = 1; // Start at Page 1 (Index)
-    const items = [];
+    const items: { title: React.ReactNode; p: string | number }[] = [];
+
+    const baseWritTitle = 'WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA';
+    const fullWritTitle = data.writTitleExtension
+      ? `${baseWritTitle} ${data.writTitleExtension.toUpperCase()}`
+      : baseWritTitle;
 
     // 1. Listing Proforma (if enabled, it comes before Index)
     if (data.includeListingProforma) {
-      items.push({ title: 'LISTING PROFORMA', p: 'A-1' }); // Usually A-series or Roman
+      items.push({ title: 'Listing Proforma', p: 'A-1' }); // Usually A-series or Roman
     }
 
-    // 2. Index (Always Page 1)
-    p++; // Increment for Index without adding it to the items array
+    // 2. Index (Unnumbered)
+    // No increment for p here so Urgent Application starts at 1
 
     // 3. Urgent Application
-    items.push({ title: 'URGENT APPLICATION', p: p++ });
+    items.push({ title: 'Urgent Application', p: p++ });
 
     // 4. Certificate
     if (data.includeCertificate) {
-      items.push({ title: 'CERTIFICATE', p: p++ });
+      items.push({ title: 'Certificate', p: p++ });
     }
 
     // 5. Notice of Motion
-    items.push({ title: 'NOTICE OF MOTION', p: p++ });
+    items.push({ title: 'Notice of Motion', p: p++ });
 
     // 6. Court Fees
-    items.push({ title: 'COURT FEES', p: p++ });
+    items.push({ title: 'Court Fees', p: p++ });
 
     // 7. Memo of Parties
-    items.push({ title: 'MEMO OF PARTIES', p: p++ });
+    items.push({ title: 'Memo of Parties', p: p++ });
 
     // 8. Synopsis and List of Dates
     const contentChars = (data.preSynopsisContent?.length || 0) + (data.synopsisContent?.length || 0);
     const contentPages = Math.max(1, Math.ceil(contentChars / 3200));
     const listPages = Math.max(1, Math.ceil(data.dateList.length / 15));
     const synopsisPages = contentPages + listPages;
-    items.push({ title: 'SYNOPSIS AND LIST OF DATES', p: synopsisPages > 1 ? `${p}-${p + synopsisPages - 1}` : p });
+    items.push({ title: 'Synopsis and List of Dates', p: synopsisPages > 1 ? `${p}-${p + synopsisPages - 1}` : p });
     p += synopsisPages;
 
     // 9. Writ Petition
     const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 3200));
     const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 4));
     const petitionPages = factsPages + groundsPages + 1;
-    items.push({ title: 'WRIT PETITION', p: `${p}-${p + petitionPages - 1}` });
+    items.push({ title: fullWritTitle, p: `${p}-${p + petitionPages - 1}` });
     p += petitionPages;
 
     // 10. Affidavit
-    items.push({ title: 'AFFIDAVIT', p: p++ });
+    items.push({ title: 'Affidavit', p: p++ });
 
     // 11. Annexures
     data.annexures.forEach((ann, idx) => {
       const pageCount = parseInt(ann.pageCount || '1', 10);
       const pageStr = pageCount > 1 ? `${p}-${p + pageCount - 1}` : p;
-      items.push({ title: `ANNEXURE ${getAnnexureTitle(idx)}: A TRUE COPY OF ${ann.title}`, p: pageStr });
+      items.push({
+        title: <><span className="font-bold uppercase">{getAnnexureTitle(idx)}</span><br />A True copy of {ann.title}</>,
+        p: pageStr
+      });
       p += pageCount;
     });
 
     // 12. Applications
     data.applications.forEach((app) => {
       const appPages = 2; // Application + Affidavit
-      items.push({ title: `MISC. APPL.: ${app.description}`, p: `${p}-${p + appPages - 1}` });
+      items.push({ title: `Misc. Appl.: ${app.description}`, p: `${p}-${p + appPages - 1}` });
       p += appPages;
     });
 
     // 13. Letter of Authority
     if (data.letterOfAuthorityUpload) {
-      items.push({ title: 'LETTER OF AUTHORITY', p: p++ });
+      items.push({ title: 'Letter of Authority', p: p++ });
     }
 
     // 14. Vakalatnama
-    items.push({ title: 'VAKALATNAMA', p: p++ });
+    items.push({ title: 'Vakalatnama', p: p++ });
 
     // 15. Proof of Service
-    if (data.proofOfServiceUploads.length > 0) items.push({ title: 'PROOF OF SERVICE', p: p++ });
+    if (data.proofOfServiceUploads.length > 0) items.push({ title: 'Proof of Service', p: p++ });
 
     return items;
-  }, [data.annexures, data.applications, data.proofOfServiceUploads, data.letterOfAuthorityUpload, data.year, data.synopsisContent, data.preSynopsisContent, data.petitionFacts, data.petitionGrounds, data.dateList, data.includeListingProforma, data.includeCertificate]);
+  }, [data.annexures, data.applications, data.proofOfServiceUploads, data.letterOfAuthorityUpload, data.year, data.writTitleExtension, data.preSynopsisContent, data.petitionFacts, data.petitionGrounds, data.dateList, data.includeListingProforma, data.includeCertificate]);
 
 
   const getGroundsAlpha = (index: number) => {
@@ -224,13 +232,11 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
 
     // Petitioner side
     let pText = (data.petitioners[0]?.name || "________________").toUpperCase();
-    if (data.petitioners[0]?.authRep) pText += ` (THROUGH ${data.petitioners[0].authRep.toUpperCase()})`;
     if (pCount === 2) pText += " & ANR.";
     else if (pCount > 2) pText += " & ORS.";
 
     // Respondent side
     let rText = (data.respondents[0]?.name || "________________").toUpperCase();
-    if (data.respondents[0]?.authRep) rText += ` (THROUGH ${data.respondents[0].authRep.toUpperCase()})`;
     if (rCount === 2) rText += " & ANR.";
     else if (rCount > 2) rText += " & ORS.";
 
@@ -321,12 +327,13 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         {data.advocates.length > 0 && (
           <div className="mt-2 font-bold border-black flex flex-col items-end">
             <p className="uppercase">{data.advocates.length > 1 ? 'ADVOCATES' : 'ADVOCATE'} FOR {data.petitioners.length > 1 ? 'PETITIONERS' : 'PETITIONER'}</p>
-            {data.addresses?.map((addr, i) => addr ? <p key={`addr-${i}`} className="font-normal normal-case mt-1">{addr}</p> : null)}
-            {([data.phoneNumbers?.filter(Boolean).join(', '), data.emails?.filter(Boolean).join(', ')].filter(Boolean).join(' | ').length > 0) && (
-              <p className="font-normal normal-case mt-1">
-                {[data.phoneNumbers?.filter(Boolean).join(', '), data.emails?.filter(Boolean).join(', ')].filter(Boolean).join(' | ')}
-              </p>
-            )}
+            {data.addresses?.filter(Boolean).length > 0
+              ? data.addresses.filter(Boolean).map((addr, i) => <p key={`addr-${i}`} className="font-normal uppercase mt-1 whitespace-pre-wrap text-right w-full">{addr}</p>)
+              : <p className="font-normal uppercase mt-1 whitespace-pre-wrap text-right w-full">[Address]</p>
+            }
+            <p className="font-normal normal-case mt-1">
+              {data.phoneNumbers?.filter(Boolean).length > 0 ? data.phoneNumbers.filter(Boolean).join(', ') : '[Phone]'} | {data.emails?.filter(Boolean).length > 0 ? data.emails.filter(Boolean).join(', ') : '[Email]'}
+            </p>
           </div>
         )}
       </div>
@@ -406,29 +413,29 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       )}
 
       {/* 1. INDEX */}
-      <Page pageNum={++p} actualPageNum={++ap}>
+      <Page pageNum="" actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold mb-10 mt-10 uppercase underline decoration-solid underline-offset-4">Index</div>
-        <table className="w-full border-collapse border border-black uppercase text-[14pt]">
+        <table className="w-full border-collapse border border-black text-[14pt]">
           <thead>
             <tr className="border border-black bg-gray-50">
-              <th className="border border-black p-2 font-bold w-18 text-center">S.NO.</th>
-              <th className="border border-black p-2 font-bold text-center">PARTICULARS</th>
-              <th className="border border-black p-2 font-bold w-32 text-center">PAGE NO.</th>
+              <th className="border border-black p-2 font-bold w-16 text-center uppercase whitespace-nowrap">S.NO.</th>
+              <th className="border border-black p-2 font-bold text-center uppercase">PARTICULARS</th>
+              <th className="border border-black p-2 font-bold w-32 text-center uppercase whitespace-nowrap">PAGE NO.</th>
             </tr>
           </thead>
           <tbody>
             {indexItems.map((item, idx) => (
               <tr key={idx} className="border border-black">
                 <td className="border border-black p-2 text-center">{idx + 1}</td>
-                <td className="border border-black p-2 uppercase">{item.title}</td>
+                <td className="border border-black p-2">{item.title}</td>
                 <td className="border border-black p-2 text-center">{item.p}</td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {data.notes && data.notes.length > 0 && (
+        {data.includeIndexNotes && data.notes && data.notes.length > 0 && (
           <div className="mt-8">
             <div className="font-bold mb-2 uppercase">Notes:</div>
             <ol className="list-decimal ml-6 space-y-2">
@@ -445,11 +452,15 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       {/* 2. URGENT APPLICATION */}
       <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
-        <div className="text-center font-bold mb-10 uppercase">Urgent Application</div>
-        <p className="mb-4">To,</p>
-        <p className="mb-4 font-bold uppercase">The Registrar,<br />IN THE HON'BLE HIGH COURT OF DELHI AT NEW DELHI,<br />{data.location || "NEW DELHI"} - {data.urgentPinCode}</p>
-        <p className="mb-10 font-bold">Sub: Application for urgent listing of the captioned writ petition.</p>
-        <div className="whitespace-pre-wrap mb-10 text-justify leading-relaxed">
+        <div className="text-center font-bold mb-6 uppercase underline">Urgent Application</div>
+        <p className="mb-2 font-normal">
+          To,<br />
+          The Registrar,<br />
+          Hon'ble High Court of Delhi<br />
+          {data.location ? (data.location.charAt(0).toUpperCase() + data.location.slice(1).toLowerCase()) : "New Delhi"} - {data.urgentPinCode}
+        </p>
+        <p className="mb-0 font-normal">Sir,</p>
+        <div className="w-full whitespace-pre-wrap mb-10 text-justify leading-relaxed">
           <FormattedText text={data.urgentContent} />
         </div>
         <Signature />
@@ -459,8 +470,8 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       {data.includeCertificate && (
         <Page pageNum={++p} actualPageNum={++ap}>
           <Header />
-          <div className="text-center font-bold mb-10 uppercase">Certificate</div>
-          <p className="whitespace-pre-wrap text-justify leading-relaxed">
+          <div className="text-center font-bold mb-10 uppercase underline">Certificate</div>
+          <p className="w-full whitespace-pre-wrap text-justify leading-relaxed">
             <FormattedText text={data.certificateContent} />
           </p>
           <Signature />
@@ -470,24 +481,20 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       {/* 3. NOTICE OF MOTION */}
       <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
-        <div className="text-center font-bold mb-10 uppercase">Notice of Motion</div>
-        <p className="mb-4">To,</p>
-        <p className="mb-10">
-          {data.noticeAddressedTo && <span>{data.noticeAddressedTo}<br /></span>}
-          {data.noticeDesignation && <span>{data.noticeDesignation}<br /></span>}
-          {data.noticeOrg && <span>{data.noticeOrg}<br /></span>}
-          {data.noticeOffice && <span>{data.noticeOffice}<br /></span>}
-          {data.noticeLocation || data.noticeOrg}
-        </p>
-        <p className="mb-10">Sir/Madam,</p>
-        <p className="mb-10">Please take notice that the accompanying Writ Petition is likely to be listed before the Hon'ble Court on <span className="font-bold">{data.noticeHearingDate || "Next Hearing Date"}</span> or any other date the Hon'ble Court may deem fit.</p>
+        <div className="text-center font-bold mb-10 uppercase underline">Notice of Motion</div>
+        <p className="mb-0">To,</p>
+        <div className="mb-4 mt-0 w-full whitespace-pre-wrap font-normal normal-case">
+          {data.noticeAddressedTo && <FormattedText text={data.noticeAddressedTo} />}
+        </div>
+        <p className="mb-4">Sir/Madam,</p>
+        <div className="w-full text-justify mb-10 leading-relaxed">Please take notice that the undersigned is preferring the accompanying Writ Petition before the Hon'ble High Court of Delhi, which will come for hearing on <span className="font-bold">{data.noticeHearingDate || "_________________"}</span> or any other date as convenient for this Hon'ble Court. You are requested to kindly be present at the time of hearing of the present petition.</div>
         <Signature />
       </Page>
 
       {/* 4. COURT FEES (New) */}
       <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
-        <div className="text-center font-bold mb-10 uppercase">Court Fees</div>
+        <div className="text-center font-bold mb-10 uppercase underline">Court Fees</div>
         <div className="border-2 border-dashed border-gray-300 h-[400px] flex items-center justify-center text-gray-400 font-bold italic mb-10 overflow-hidden">
           {data.courtFeeAttachment ? (
             <img src={data.courtFeeAttachment} className="w-full h-full object-contain" alt="Court Fee" />
@@ -513,38 +520,45 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       {/* 3A. MEMO OF PARTIES */}
       <Page pageNum={++p} actualPageNum={++ap}>
         <Header />
-        <div className="text-center font-bold mb-10 uppercase">Memo of Parties</div>
+        <div className="text-center font-bold mb-10 uppercase underline">Memo of Parties</div>
 
         <div className="space-y-8">
-          <div className="flex justify-between items-end">
-            <div className="flex-1">
+          <div>
+            <div>
               {data.petitioners.map((pet, i) => (
-                <div key={pet.id} className="mb-6">
+                <div key={pet.id} className="mb-6 text-left">
                   <p className="font-bold">{i + 1}. {pet.name.toUpperCase()}</p>
-                  {pet.authRep && <p className="normal-case">Through its Authorised Representative {pet.authRep}</p>}
-                  {pet.addresses.map((addr, ai) => <p key={ai} className="pl-6">{addr}</p>)}
-                  <p className="pl-6 uppercase">{pet.city} - {pet.pin}, {pet.state}</p>
+                  {pet.authRep && (
+                    <div className="mt-2 text-left">
+                      <p className="normal-case">Through its Authorised Representative<br />{pet.authRep},</p>
+                    </div>
+                  )}
+                  <p className="whitespace-pre-wrap mt-2">{pet.address}</p>
+                  {pet.email && <p className="normal-case">{pet.email}</p>}
                 </div>
               ))}
             </div>
-            <div className="w-40 text-right font-bold mb-6">...{data.petitioners.length > 1 ? 'PETITIONERS' : 'PETITIONER'}</div>
+            <div className="text-right font-bold mt-2">...{data.petitioners.length > 1 ? 'PETITIONERS' : 'PETITIONER'}</div>
           </div>
 
           <div className="text-center font-bold py-4">VERSUS</div>
 
-          <div className="flex justify-between items-end">
-            <div className="flex-1">
+          <div>
+            <div>
               {data.respondents.map((r, i) => (
-                <div key={r.id} className="mb-6">
+                <div key={r.id} className="mb-6 text-left">
                   <p className="font-bold">{i + 1}. {r.name.toUpperCase()}</p>
-                  {r.authRep && <p className="normal-case">Through its Authorised Representative {r.authRep}</p>}
-                  {r.addresses.map((addr, ai) => <p key={ai} className="pl-6">{addr}</p>)}
-                  <p className="pl-6 uppercase">{r.city} - {r.pin}, {r.state}</p>
-                  {r.email && <p className="pl-6">Email: {r.email}</p>}
+                  {r.authRep && (
+                    <div className="mt-2 text-left">
+                      <p className="normal-case">Through its Authorised Representative<br />{r.authRep},</p>
+                    </div>
+                  )}
+                  <p className="whitespace-pre-wrap mt-2">{r.address}</p>
+                  {r.email && <p className="normal-case">{r.email}</p>}
                 </div>
               ))}
             </div>
-            <div className="w-40 text-right font-bold mb-6">...{data.respondents.length > 1 ? 'RESPONDENTS' : 'RESPONDENT'}</div>
+            <div className="text-right font-bold mt-2">...{data.respondents.length > 1 ? 'RESPONDENTS' : 'RESPONDENT'}</div>
           </div>
         </div>
 
@@ -559,11 +573,14 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         const synopsisPages = contentPages + listPages;
         const pageLabel = renderPagination(synopsisPages);
 
+        const baseWritTitle = 'WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA';
+        const fullWritTitle = data.writTitleExtension ? `${baseWritTitle} ${data.writTitleExtension}` : baseWritTitle;
+
         return (
           <Page pageNum={pageLabel} actualPageNum={ap}>
             <Header />
-            <div className="uppercase font-bold mb-4 text-center">
-              {data.synopsisDescription}
+            <div className="uppercase font-bold mb-4 text-justify underline decoration-solid underline-offset-4 w-full">
+              {fullWritTitle}
             </div>
             <div className="text-center font-bold mb-6 uppercase">Synopsis</div>
 
@@ -605,11 +622,14 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
         const petitionPages = factsPages + groundsPages + 1;
         const pageLabel = renderPagination(petitionPages);
 
+        const baseWritTitle = 'WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA';
+        const fullWritTitle = data.writTitleExtension ? `${baseWritTitle} ${data.writTitleExtension}` : baseWritTitle;
+
         return (
           <Page pageNum={pageLabel} actualPageNum={ap}>
             <Header />
-            <div className="text-center font-bold mb-8 px-10">
-              {data.petitionDescriptionMain || `WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA SEEKING THE ISSUANCE OF A WRIT, ORDER OR DIRECTION IN THE NATURE OF CERTIORARI, MANDAMUS OR ANY OTHER APPROPRIATE WRIT...`}
+            <div className="font-bold mb-8 uppercase text-justify underline decoration-solid underline-offset-4 w-full">
+              {fullWritTitle}
             </div>
             <div className="font-bold mb-6">MOST RESPECTFULLY SHOWETH:</div>
             <div className="whitespace-pre-wrap mb-10">

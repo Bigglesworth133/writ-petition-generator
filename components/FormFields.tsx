@@ -1,6 +1,6 @@
 
-import React, { memo, useState } from 'react';
-import { MessageSquare, Trash2, Edit, CheckCircle2, CornerUpRight, ChevronDown, CheckCircle } from 'lucide-react';
+import React, { memo, useState, useRef } from 'react';
+import { MessageSquare, Trash2, Edit, CheckCircle2, CornerUpRight, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 
 interface InputProps {
   label: string;
@@ -9,6 +9,7 @@ interface InputProps {
   placeholder?: string;
   type?: string;
   multiline?: boolean;
+  formatHint?: string;
   description?: string;
   reviewMode?: boolean;
   onAddAnnotation?: (text: string) => void;
@@ -81,6 +82,7 @@ export const TextInput = memo(({
   placeholder,
   type = "text",
   multiline = false,
+  formatHint,
   description,
   reviewMode,
   onAddAnnotation,
@@ -131,7 +133,9 @@ export const TextInput = memo(({
             placeholder={placeholder}
           />
           <div className="absolute bottom-2 right-2 flex gap-2 opacity-10 group-focus-within:opacity-100 transition-opacity pointer-events-none">
-            <span className="text-[10px] font-black text-gray-400 bg-white/80 px-1 rounded border border-gray-100 italic">Formatting: **bold** *italic*</span>
+            <span className="text-[10px] font-black text-gray-400 bg-white/80 px-1 rounded border border-gray-100 italic">
+              {formatHint || "Formatting: **bold** *italic*"}
+            </span>
           </div>
         </div>
       ) : (
@@ -148,7 +152,7 @@ export const TextInput = memo(({
 });
 
 export const SectionHeader = ({ title, subtitle }: { title: string; subtitle?: string }) => (
-  <div className="mb-8 mt-12 border-b-2 border-gray-100 pb-3">
+  <div className="mb-4 mt-2 border-b-2 border-gray-100 pb-3">
     <h3 className="text-xl font-black text-gray-900 flex items-center gap-3">
       <div className="w-2 h-8 bg-blue-600 rounded-full"></div>
       {title}
@@ -156,6 +160,51 @@ export const SectionHeader = ({ title, subtitle }: { title: string; subtitle?: s
     {subtitle && <p className="text-sm text-gray-500 mt-1 font-medium">{subtitle}</p>}
   </div>
 );
+
+export const CollapsibleSection = ({ title, subtitle, children, defaultOpen = true }: { title: string; subtitle?: string; children: React.ReactNode; defaultOpen?: boolean }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div ref={sectionRef} className="mb-8 mt-6 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      <div
+        className="px-6 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors select-none"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <div>
+          <h3 className="text-xl font-black text-gray-900 flex items-center gap-3">
+            <div className="w-2 h-8 bg-blue-600 rounded-full"></div>
+            {title}
+          </h3>
+          {subtitle && <p className="text-sm text-gray-500 mt-1 font-medium">{subtitle}</p>}
+        </div>
+        <div className={`transform transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
+          <ChevronDown className="w-6 h-6 text-gray-400" />
+        </div>
+      </div>
+      {isOpen && (
+        <div className="px-6 pb-6 pt-2 border-t border-gray-100 animate-in fade-in slide-in-from-top-4 duration-300">
+          {children}
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsOpen(false);
+                setTimeout(() => {
+                  sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+              }}
+              className="flex items-center justify-center w-8 h-8 rounded-full text-gray-400 hover:text-blue-600 transition-colors bg-gray-50 hover:bg-blue-50 focus:outline-none"
+              title="Collapse Section"
+            >
+              <ChevronUp className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const RepeatableBlock = ({
   title,
@@ -167,8 +216,13 @@ export const RepeatableBlock = ({
   children: React.ReactNode
 }) => (
   <div className="bg-gray-50/50 p-6 rounded-2xl border border-gray-200 mb-8">
-    <div className="flex justify-between items-center mb-6">
+    <div className="mb-6">
       <h4 className="font-black text-gray-800 uppercase tracking-widest text-xs">{title}</h4>
+    </div>
+    <div className="space-y-6">
+      {children}
+    </div>
+    <div className="mt-6 flex justify-start">
       <button
         type="button"
         onClick={onAdd}
@@ -176,9 +230,6 @@ export const RepeatableBlock = ({
       >
         + Add {title.replace(/List|s$/i, '')}
       </button>
-    </div>
-    <div className="space-y-6">
-      {children}
     </div>
   </div>
 );
