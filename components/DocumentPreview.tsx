@@ -363,7 +363,15 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
   };
 
   let p = 0;
+  let currentP = 1;
   let ap = 0;
+
+  const getPageNumStr = (id: string, forcedCount?: number) => {
+     const count = forcedCount !== undefined ? forcedCount : (pageCounts[id] || 1);
+     const startP = currentP;
+     currentP += count;
+     return startP;
+  };
 
   // Helper to sync pagination for long sections
   const renderPagination = (estimatedPages: number) => {
