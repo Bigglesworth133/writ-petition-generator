@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useLayoutEffect } from 'react';
 import { Annotation, WritFormData } from '../types';
 import { FORMATTING, getAnnexureTitle } from '../constants';
 import { Trash2 } from 'lucide-react';
@@ -67,6 +67,38 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
   onAddAnnotation,
   onRemoveAnnotation
 }) => {
+    const [pageCounts, setPageCounts] = useState<Record<string, number>>({});
+
+  useLayoutEffect(() => {
+    const previewContainer = document.getElementById('document-preview');
+    if (!previewContainer) return;
+
+    const a4Px = 297 * 3.779527559; 
+    const newCounts = {};
+    const pages = previewContainer.querySelectorAll('[data-section-id]');
+    
+    pages.forEach(page => {
+      const id = page.getAttribute('data-section-id');
+      if (id) {
+        const height = page.getBoundingClientRect().height;
+        const count = Math.max(1, Math.ceil((height - 10) / a4Px));
+        newCounts[id] = count;
+      }
+    });
+
+    let changed = false;
+    for (const key in newCounts) {
+      if (newCounts[key] !== pageCounts[key]) {
+        changed = true; break;
+      }
+    }
+    if (Object.keys(newCounts).length !== Object.keys(pageCounts).length) changed = true;
+
+    if (changed) {
+      setPageCounts(newCounts);
+    }
+  }, [data, reviewMode]);
+
   const handlePageClick = (e: React.MouseEvent<HTMLDivElement>, pageNum: number) => {
     if (!reviewMode || !onAddAnnotation) return;
 
@@ -90,7 +122,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     }
   };
 
-  const Page = ({ children, className = "", pageNum, actualPageNum, key, noPadding = false }: { children: React.ReactNode, className?: string, pageNum?: number | string, actualPageNum: number, key?: React.Key, noPadding?: boolean }) => (
+  const Page = ({ children, className = "", pageNum, actualPageNum, key, noPadding = false, sectionId }: { children: React.ReactNode, className?: string, pageNum?: number | string, actualPageNum: number, key?: React.Key, noPadding?: boolean, sectionId?: string }) => (
     <div
       onClick={(e) => handlePageClick(e, actualPageNum)}
       key={key}
@@ -131,117 +163,62 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       ))}
     </div>
   );
-  // Auto-indexing logic with dynamic page length estimation
+  // Auto-indexing logic using DOM calculated page counts
   const indexItems = useMemo(() => {
-    let p = 1; // Start at Page 1 (Index)
-    const items: { title: React.ReactNode; p: string | number }[] = [];
+    let p = 1; 
+    const items: { title: React.ReactNode; p: string | number; id: string }[] = [];
 
     const baseWritTitle = 'WRIT PETITION UNDER ARTICLE 226 & 227 OF THE CONSTITUTION OF INDIA';
     const fullWritTitle = data.writTitleExtension
-      ? `${baseWritTitle} ${data.writTitleExtension.toUpperCase()}`
+      ? baseWritTitle + ' ' + data.writTitleExtension.toUpperCase()
       : baseWritTitle;
 
-    // 1. Listing Proforma (if enabled, it comes before Index)
+    const pushItem = (title: React.ReactNode, id: string, defaultFallback: number = 1) => {
+      const count = pageCounts[id] || defaultFallback;
+      const endPage = p + count - 1;
+      const pageStr = count > 1 ? p + '-' + endPage : p.toString();
+      items.push({ title, p: pageStr, id });
+      p += count;
+    };
+
     if (data.includeListingProforma) {
-      items.push({ title: 'Listing Proforma', p: 'A-1' }); // Usually A-series or Roman
+      items.push({ title: 'Listing Proforma', p: 'A-1', id: 'listing' });
     }
 
-    // 2. Index (Unnumbered)
-    // No increment for p here so Urgent Application starts at 1
-
-    // 3. Urgent Application
-    items.push({ title: 'Urgent Application', p: p++ });
-
-    // 4. Certificate
-    if (data.includeCertificate) {
-      items.push({ title: 'Certificate', p: p++ });
+    pushItem('Urgent Application', 'urgent');
+    if (data.includeCertificate) pushItem('Certificate', 'certificate');
+    pushItem('Notice of Motion', 'notice');
+    
+    if (!data.courtFeeOption || data.courtFeeOption === 'And' || data.courtFeeOption === 'Or (Table Only)') {
+        pushItem('Court Fees', 'court_fees');
+    }
+    if (data.courtFeeAttachment && ['And', 'Or (Attachment Only)', ''].includes(data.courtFeeOption || '')) {
+       const attachmentPages = data.courtFeeAttachment.toLowerCase().endsWith('.pdf') || data.courtFeeAttachment.startsWith('data:application/pdf') 
+         ? parseInt(data.courtFeeAttachmentPages || '1', 10) 
+         : 1;
+       pushItem('Court Fees (Attachment)', 'court_fees_attach', attachmentPages);
     }
 
-    // 5. Notice of Motion
-    items.push({ title: 'Notice of Motion', p: p++ });
+    pushItem('Memo of Parties', 'memo');
+    pushItem('Synopsis and List of Dates', 'synopsis', 2);
+    pushItem(fullWritTitle, 'petition', 4);
+    pushItem('Affidavit', 'affidavit');
 
-    // 6. Court Fees
-    const courtFeeOption = data.courtFeeOption || 'And';
-
-    // Track pages specifically used by Court Fees
-    let courtFeeStartPage = p;
-    let courtFeeEndPage = p;
-
-    if (courtFeeOption === 'And' || courtFeeOption === 'Or (Table Only)') {
-      courtFeeEndPage = p;
-      p++;
-    }
-
-    if ((courtFeeOption === 'And' || courtFeeOption === 'Or (Attachment Only)') && data.courtFeeAttachment) {
-      if (data.courtFeeAttachment.toLowerCase().endsWith('.pdf') || data.courtFeeAttachment.startsWith('data:application/pdf')) {
-        const attachPages = parseInt(data.courtFeeAttachmentPages || '1', 10);
-        courtFeeEndPage = p + attachPages - 1;
-        p += attachPages;
-      } else {
-        courtFeeEndPage = p;
-        p++;
-      }
-    }
-
-    // Push the entire Court Fee block into the index
-    items.push({
-      title: 'Court Fees',
-      p: courtFeeStartPage === courtFeeEndPage ? courtFeeStartPage : `${courtFeeStartPage}-${courtFeeEndPage}`
-    });
-
-    // 7. Memo of Parties
-    items.push({ title: 'Memo of Parties', p: p++ });
-
-    // 8. Synopsis and List of Dates
-    const contentChars = (data.preSynopsisContent?.length || 0) + (data.synopsisContent?.length || 0);
-    const contentPages = Math.max(1, Math.ceil(contentChars / 3200));
-    const listPages = Math.max(1, Math.ceil(data.dateList.length / 15));
-    const synopsisPages = contentPages + listPages;
-    items.push({ title: 'Synopsis and List of Dates', p: synopsisPages > 1 ? `${p}-${p + synopsisPages - 1}` : p });
-    p += synopsisPages;
-
-    // 9. Writ Petition
-    const factsPages = Math.max(1, Math.ceil((data.petitionFacts?.length || 0) / 3200));
-    const groundsPages = Math.max(1, Math.ceil(data.petitionGrounds.split('\n').filter(g => g.trim()).length / 4));
-    const petitionPages = factsPages + groundsPages + 1;
-    items.push({ title: fullWritTitle, p: `${p}-${p + petitionPages - 1}` });
-    p += petitionPages;
-
-    // 10. Affidavit
-    items.push({ title: 'Affidavit', p: p++ });
-
-    // 11. Annexures
     data.annexures.forEach((ann, idx) => {
       const pageCount = parseInt(ann.pageCount || '1', 10);
-      const pageStr = pageCount > 1 ? `${p}-${p + pageCount - 1}` : p;
-      items.push({
-        title: <><span className="font-bold uppercase">{getAnnexureTitle(idx)}</span><br />A True copy of {ann.title}</>,
-        p: pageStr
-      });
-      p += pageCount;
+      pushItem(<><span className="font-bold uppercase">{getAnnexureTitle(idx)}</span><br />A True copy of {ann.title}</>, 'annexure-' + idx, pageCount);
     });
 
-    // 12. Applications
-    data.applications.forEach((app) => {
-      const appPages = 2; // Application + Affidavit
-      items.push({ title: `Misc. Appl.: ${app.description}`, p: `${p}-${p + appPages - 1}` });
-      p += appPages;
+    data.applications.forEach((app, idx) => {
+      pushItem('Misc. Appl.: ' + app.description, 'app-' + idx, 2);
     });
 
-    // 13. Letter of Authority
-    if (data.letterOfAuthorityUpload) {
-      items.push({ title: 'Letter of Authority', p: p++ });
-    }
-
-    // 14. Vakalatnama
-    items.push({ title: 'Vakalatnama', p: p++ });
-
-    // 15. Proof of Service
-    if (data.proofOfServiceUploads.length > 0) items.push({ title: 'Proof of Service', p: p++ });
+    if (data.letterOfAuthorityUpload) pushItem('Letter of Authority', 'loa');
+    pushItem('Vakalatnama', 'vakalatnama');
+    if (data.proofOfServiceUploads.length > 0) pushItem('Proof of Service', 'pos');
 
     return items;
-  }, [data.annexures, data.applications, data.proofOfServiceUploads, data.letterOfAuthorityUpload, data.year, data.writTitleExtension, data.preSynopsisContent, data.petitionFacts, data.petitionGrounds, data.dateList, data.includeListingProforma, data.includeCertificate]);
-
+  }, [data, pageCounts]);
 
   const getGroundsAlpha = (index: number) => {
     let result = '';
@@ -401,7 +378,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     <div className="flex flex-col items-center gap-12 pb-20" id="document-preview">
       {/* 0. LISTING PROFORMA (Conditional) */}
       {data.includeListingProforma && (
-        <Page pageNum="A-1" actualPageNum={++ap}>
+        <Page sectionId="listing" pageNum="A-1" actualPageNum={++ap}>
           <div className="text-center font-bold mb-10 uppercase">Listing Proforma</div>
           <table className="w-full border-collapse border border-black uppercase text-justify">
             <tbody>
@@ -440,7 +417,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       )}
 
       {/* 1. INDEX */}
-      <Page pageNum="" actualPageNum={++ap}>
+      <Page sectionId="index_page" pageNum="" actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold mb-10 mt-10 uppercase underline decoration-solid underline-offset-4">Index</div>
         <table className="w-full border-collapse border border-black text-[14pt]">
@@ -477,7 +454,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       </Page>
 
       {/* 2. URGENT APPLICATION */}
-      <Page pageNum={++p} actualPageNum={++ap}>
+      <Page sectionId="urgent" pageNum={getPageNumStr("urgent")} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold mb-6 uppercase underline">Urgent Application</div>
         <p className="mb-2 font-normal">
@@ -495,7 +472,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
 
       {/* 2A. CERTIFICATE (Conditional) */}
       {data.includeCertificate && (
-        <Page pageNum={++p} actualPageNum={++ap}>
+        <Page sectionId="certificate" pageNum={getPageNumStr("certificate")} actualPageNum={++ap}>
           <Header />
           <div className="text-center font-bold mb-10 uppercase underline">Certificate</div>
           <p className="w-full whitespace-pre-wrap text-justify leading-relaxed">
@@ -506,7 +483,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       )}
 
       {/* 3. NOTICE OF MOTION */}
-      <Page pageNum={++p} actualPageNum={++ap}>
+      <Page sectionId="notice" pageNum={getPageNumStr("notice")} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold mb-10 uppercase underline">Notice of Motion</div>
         <p className="mb-0">To,</p>
@@ -520,7 +497,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
 
       {/* 4. COURT FEES (New) */}
       {(data.courtFeeOption === 'And' || data.courtFeeOption === 'Or (Table Only)' || !data.courtFeeOption) && (
-        <Page pageNum={++p} actualPageNum={++ap}>
+        <Page sectionId="court_fees" pageNum={getPageNumStr("court_fees")} actualPageNum={++ap}>
           <Header />
           <div className="text-center font-bold mb-10 uppercase underline">Court Fees</div>
           <table className="w-full border-collapse border border-black uppercase mt-10">
@@ -542,7 +519,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       {(data.courtFeeOption === 'And' || data.courtFeeOption === 'Or (Attachment Only)' || !data.courtFeeOption) && data.courtFeeAttachment && (
         data.courtFeeAttachment.toLowerCase().endsWith('.pdf') || data.courtFeeAttachment.startsWith('data:application/pdf') ? (
           Array.from({ length: parseInt(data.courtFeeAttachmentPages || '1', 10) }).map((_, idx) => (
-            <Page key={`court-fee-pdf-${idx}`} pageNum={++p} actualPageNum={++ap} noPadding={true}>
+            <Page key={`court-fee-pdf-${idx}`} sectionId="court_fees_attach" pageNum={getPageNumStr("court_fees_attach", 1)} actualPageNum={++ap} noPadding={true}>
               <div className="absolute top-[1.5in] w-full text-center font-bold uppercase underline z-10">Court Fees</div>
               <div className="w-full h-full flex items-center justify-center">
                 <PDFPageRenderer dataUrl={data.courtFeeAttachment!} pageNumber={idx + 1} />
@@ -560,7 +537,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       )}
 
       {(data.courtFeeOption === 'And' || data.courtFeeOption === 'Or (Attachment Only)' || !data.courtFeeOption) && !data.courtFeeAttachment && (
-        <Page pageNum={++p} actualPageNum={++ap}>
+        <Page sectionId="court_fees" pageNum={getPageNumStr("court_fees")} actualPageNum={++ap}>
           <Header />
           <div className="text-center font-bold mb-10 uppercase underline">Court Fees</div>
           <div className="border-2 border-dashed border-gray-300 h-[600px] flex items-center justify-center text-gray-400 font-bold italic mb-10 overflow-hidden">
@@ -571,7 +548,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       )}
 
       {/* 3A. MEMO OF PARTIES */}
-      <Page pageNum={++p} actualPageNum={++ap}>
+      <Page sectionId="memo" pageNum={getPageNumStr("memo")} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold mb-10 uppercase underline">Memo of Parties</div>
 
@@ -724,7 +701,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       })()}
 
       {/* 6. AFFIDAVIT */}
-      <Page pageNum={++p} actualPageNum={++ap}>
+      <Page sectionId="affidavit" pageNum={getPageNumStr("affidavit")} actualPageNum={++ap}>
         <Header />
         <div className="text-center font-bold mb-10 uppercase">Affidavit</div>
         <p className="mb-6 leading-relaxed">
@@ -815,7 +792,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       {/* 8. APPLICATIONS */}
       {data.applications.map((app) => (
         <React.Fragment key={app.id}>
-          <Page pageNum={++p} actualPageNum={++ap}>
+          <Page sectionId="loa" pageNum={getPageNumStr("loa")} actualPageNum={++ap}>
             <Header />
             <div className="text-center font-bold mb-8 px-10 uppercase">
               IN THE MATTER OF:<br />
@@ -833,7 +810,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
           </Page>
 
           {/* Application Affidavit */}
-          <Page pageNum={++p} actualPageNum={++ap}>
+          <Page sectionId="vakalatnama" pageNum={getPageNumStr("vakalatnama")} actualPageNum={++ap}>
             <Header />
             <div className="text-center font-bold mb-10 uppercase">Affidavit</div>
             <p className="mb-6 leading-relaxed">
