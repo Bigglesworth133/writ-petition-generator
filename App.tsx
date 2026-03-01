@@ -148,12 +148,26 @@ export default function App() {
       is_resolved: false,
       replies: []
     });
-    if (error) console.error('Error saving annotation:', error);
+    // Optimistic Update
+    setAnnotations(prev => [...prev, { ...anno, isResolved: false }]);
+
+    if (error) {
+      console.error('Error saving annotation:', error);
+      // Revert if error
+      setAnnotations(prev => prev.filter(a => a.id !== anno.id));
+    }
   };
 
   const removeAnnotation = async (id: string) => {
+    // Optimistic Delete
+    const previous = [...annotations];
+    setAnnotations(prev => prev.filter(a => a.id !== id));
+
     const { error } = await supabase.from('annotations').delete().eq('id', id);
-    if (error) console.error('Error deleting annotation:', error);
+    if (error) {
+      console.error('Error deleting annotation:', error);
+      setAnnotations(previous); // Revert
+    }
   };
 
   const editAnnotation = async (id: string) => {
@@ -161,8 +175,15 @@ export default function App() {
     if (!anno) return;
     const newText = prompt("Edit comment:", anno.text);
     if (newText && newText !== anno.text) {
+      // Optimistic Update
+      const previous = [...annotations];
+      setAnnotations(prev => prev.map(a => a.id === id ? { ...a, text: newText } : a));
+
       const { error } = await supabase.from('annotations').update({ text: newText }).eq('id', id);
-      if (error) console.error('Error editing annotation:', error);
+      if (error) {
+        console.error('Error editing annotation:', error);
+        setAnnotations(previous); // Revert
+      }
     }
   };
 
@@ -179,16 +200,32 @@ export default function App() {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       const updatedReplies = [...(anno.replies || []), newReply];
+
+      // Optimistic Update
+      const previous = [...annotations];
+      setAnnotations(prev => prev.map(a => a.id === id ? { ...a, replies: updatedReplies } : a));
+
       const { error } = await supabase.from('annotations').update({ replies: updatedReplies }).eq('id', id);
-      if (error) console.error('Error adding reply:', error);
+      if (error) {
+        console.error('Error adding reply:', error);
+        setAnnotations(previous); // Revert
+      }
     }
   };
 
   const toggleResolve = async (id: string) => {
     const anno = annotations.find(a => a.id === id);
     if (!anno) return;
+
+    // Optimistic Toggle
+    const previous = [...annotations];
+    setAnnotations(prev => prev.map(a => a.id === id ? { ...a, isResolved: !a.isResolved } : a));
+
     const { error } = await supabase.from('annotations').update({ is_resolved: !anno.isResolved }).eq('id', id);
-    if (error) console.error('Error toggling resolve:', error);
+    if (error) {
+      console.error('Error toggling resolve:', error);
+      setAnnotations(previous); // Revert
+    }
   };
 
   const exportFeedback = () => {
