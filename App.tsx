@@ -63,6 +63,8 @@ const INITIAL_DATA: WritFormData = {
   petitionPrayers: '',
   groundEnumerationType: 'Alpha',
   affidavitIdentity: 'Petitioner',
+  affidavitRelationType: 'S/o',
+  affidavitRelationName: '',
   affidavitName: '',
   affidavitAge: '',
   affidavitAddress: '',
@@ -623,13 +625,76 @@ export default function App() {
                         />
                       </div>
                     </div>
-                    <RichTextInput label="Preliminary Statement (Optional)" value={formData.preSynopsisContent} onChange={v => updateField('preSynopsisContent', v)} {...gf('Pre-Synopsis')} />
+                    {/* <RichTextInput label="Preliminary Statement (Optional)" value={formData.preSynopsisContent} onChange={v => updateField('preSynopsisContent', v)} {...gf('Pre-Synopsis')} /> */}
                     <RichTextInput label="Synopsis Content" value={formData.synopsisContent} onChange={v => updateField('synopsisContent', v)} {...gf('Synopsis')} />
                     <RepeatableBlock title="List of Dates" onAdd={() => updateField('dateList', [...formData.dateList, { id: Date.now().toString(), dates: [''], event: '' }])}>
                       {formData.dateList.map((d, i) => (
                         <div key={d.id} className="flex gap-2 items-start bg-white p-3 rounded-xl shadow-sm">
                           <div className="w-32"><TextInput label="Date" value={d.dates[0]} onChange={v => { const up = [...formData.dateList]; up[i].dates = [v]; updateField('dateList', up); }} /></div>
                           <div className="flex-1"><TextInput label="Event" value={d.event} onChange={v => { const up = [...formData.dateList]; up[i].event = v; updateField('dateList', up); }} /></div>
+                        </div>
+                      ))}
+                    </RepeatableBlock>
+                  </CollapsibleSection>
+
+                  <CollapsibleSection title="The Writ Petition" defaultOpen={false}>
+                    <TextInput label="Header / Showeth" multiline placeholder="1. The present Writ Petition seeks to..." value={formData.petitionShoweth} onChange={v => updateField('petitionShoweth', v)} {...gf('Header / Showeth')} />
+                    <TextInput label="Facts" multiline value={formData.petitionFacts} onChange={v => updateField('petitionFacts', v)} {...gf('Facts')} />
+                    <TextInput label="Grounds" multiline value={formData.petitionGrounds} onChange={v => updateField('petitionGrounds', v)} {...gf('Grounds')} />
+                    <TextInput label="Prayers" multiline value={formData.petitionPrayers} onChange={v => updateField('petitionPrayers', v)} {...gf('Prayers')} />
+                  </CollapsibleSection>
+
+                  <CollapsibleSection title="Affidavit Details" defaultOpen={false}>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SelectInput label="Identity" value={formData.affidavitIdentity} options={[{ label: 'Petitioner', value: 'Petitioner' }, { label: 'Auth Rep', value: 'Authorized Representative' }]} onChange={v => updateField('affidavitIdentity', v)} {...gf('Affidavit Identity')} />
+                      <TextInput label="Name" value={formData.affidavitName} onChange={v => updateField('affidavitName', v)} {...gf('Affidavit Name')} />
+                      <SelectInput label="Relation" value={formData.affidavitRelationType || 'S/o'} options={[{ label: 'S/o', value: 'S/o' }, { label: 'D/o', value: 'D/o' }, { label: 'W/o', value: 'W/o' }]} onChange={v => updateField('affidavitRelationType', v)} {...gf('Affidavit Relation Type')} />
+                      <TextInput label="Relative Name" value={formData.affidavitRelationName || ''} onChange={v => updateField('affidavitRelationName', v)} {...gf('Affidavit Relation Name')} />
+                      <TextInput label="Age" value={formData.affidavitAge} onChange={v => updateField('affidavitAge', v)} {...gf('Affidavit Age')} />
+                      <div className="col-span-2"><TextInput label="Address" value={formData.affidavitAddress} onChange={v => updateField('affidavitAddress', v)} {...gf('Affidavit Address')} /></div>
+                      <div className="col-span-2"><TextInput label="Present Location" value={formData.affidavitLocation} onChange={v => updateField('affidavitLocation', v)} {...gf('Affidavit Location')} /></div>
+                      <TextInput label="Verification Date" value={formData.verificationDate} placeholder="e.g. 21.01.2025" onChange={v => updateField('verificationDate', v)} {...gf('Verification Date')} />
+                    </div>
+                  </CollapsibleSection>
+
+                  <CollapsibleSection title="Annexures" defaultOpen={false}>
+                    <RepeatableBlock title="Annexures" onAdd={() => updateField('annexures', [...formData.annexures, { id: Date.now().toString(), title: '', heading: '', pageCount: '1', contentText: '', files: [] }])}>
+                      {formData.annexures.map((ann, i) => (
+                        <div key={ann.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200 mb-4">
+                          <button onClick={() => updateField('annexures', formData.annexures.filter(x => x.id !== ann.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                          <div className="grid grid-cols-4 gap-4 mb-4">
+                            <div className="col-span-4">
+                              <TextInput label={`Annexure #${i + 1} Title for Index`} placeholder="A true copy of ..." value={ann.title} onChange={v => { const up = [...formData.annexures]; up[i].title = v; updateField('annexures', up); }} {...gf(`Annexure #${i + 1} Title`)} />
+                            </div>
+                            <div className="col-span-4">
+                              <TextInput label={`Annexure #${i + 1} Heading (optional)`} placeholder="e.g. IMPUGNED ORDER" value={ann.heading || ''} onChange={v => { const up = [...formData.annexures]; up[i].heading = v; updateField('annexures', up); }} {...gf(`Annexure #${i + 1} Heading`)} />
+                            </div>
+                          </div>
+                          <div className="relative">
+                            <input
+                              type="file"
+                              id={`file-upload-${ann.id}`}
+                              className="hidden"
+                              accept="image/*,.pdf"
+                              onChange={(e) => handleFileUpload(e, i)}
+                            />
+                            <label
+                              htmlFor={`file-upload-${ann.id}`}
+                              className={`border-2 border-dashed rounded-xl p-4 text-center font-bold hover:bg-gray-100 transition-all cursor-pointer flex items-center justify-center gap-2 ${ann.files.length > 0 ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400'}`}
+                            >
+                              {ann.files.length > 0 ? (
+                                <>
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  FILE ATTACHED ({ann.pageCount} pages detected)
+                                </>
+                              ) : (
+                                <>
+                                  <Paperclip className="w-4 h-4" />
+                                  UPLOAD FILE (PDF/Image)
+                                </>
+                              )}
+                            </label>
+                          </div>
                         </div>
                       ))}
                     </RepeatableBlock>
@@ -652,67 +717,6 @@ export default function App() {
                       <FileText className="w-4 h-4" /> {formData.includeListingProforma ? 'PROFORMA: INCLUDED' : 'PROFORMA: EXCLUDED'}
                     </button>
                   </div>
-
-                  <CollapsibleSection title="The Writ Petition" defaultOpen={false}>
-                    <TextInput label="Header / Showeth" multiline placeholder="1. The present Writ Petition seeks to..." value={formData.petitionShoweth} onChange={v => updateField('petitionShoweth', v)} {...gf('Header / Showeth')} />
-                    <TextInput label="Facts" multiline value={formData.petitionFacts} onChange={v => updateField('petitionFacts', v)} {...gf('Facts')} />
-                    <TextInput label="Grounds" multiline value={formData.petitionGrounds} onChange={v => updateField('petitionGrounds', v)} {...gf('Grounds')} />
-                    <TextInput label="Prayers" multiline value={formData.petitionPrayers} onChange={v => updateField('petitionPrayers', v)} {...gf('Prayers')} />
-                  </CollapsibleSection>
-
-                  <CollapsibleSection title="Affidavit Details" defaultOpen={false}>
-                    <div className="grid grid-cols-2 gap-4">
-                      <SelectInput label="Identity" value={formData.affidavitIdentity} options={[{ label: 'Petitioner', value: 'Petitioner' }, { label: 'Auth Rep', value: 'Authorized Representative' }]} onChange={v => updateField('affidavitIdentity', v)} {...gf('Affidavit Identity')} />
-                      <TextInput label="Name" value={formData.affidavitName} onChange={v => updateField('affidavitName', v)} {...gf('Affidavit Name')} />
-                      <TextInput label="Age" value={formData.affidavitAge} onChange={v => updateField('affidavitAge', v)} {...gf('Affidavit Age')} />
-                      <TextInput label="Verification Date" value={formData.verificationDate} placeholder="e.g. 21.01.2025" onChange={v => updateField('verificationDate', v)} {...gf('Verification Date')} />
-                      <div className="col-span-2"><TextInput label="Address" value={formData.affidavitAddress} onChange={v => updateField('affidavitAddress', v)} {...gf('Affidavit Address')} /></div>
-                      <div className="col-span-2"><TextInput label="Present Location" value={formData.affidavitLocation} onChange={v => updateField('affidavitLocation', v)} {...gf('Affidavit Location')} /></div>
-                    </div>
-                  </CollapsibleSection>
-
-                  <CollapsibleSection title="Annexures" defaultOpen={false}>
-                    <RepeatableBlock title="Annexures" onAdd={() => updateField('annexures', [...formData.annexures, { id: Date.now().toString(), title: '', pageCount: '1', contentText: '', files: [] }])}>
-                      {formData.annexures.map((ann, i) => (
-                        <div key={ann.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200 mb-4">
-                          <button onClick={() => updateField('annexures', formData.annexures.filter(x => x.id !== ann.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                          <div className="grid grid-cols-4 gap-4">
-                            <div className="col-span-3">
-                              <TextInput label={`Annexure #${i + 1} Title`} value={ann.title} onChange={v => { const up = [...formData.annexures]; up[i].title = v; updateField('annexures', up); }} {...gf(`Annexure #${i + 1} Title`)} />
-                            </div>
-                            <div className="col-span-1">
-                              <TextInput label="Total Pages" type="number" value={ann.pageCount} onChange={v => { const up = [...formData.annexures]; up[i].pageCount = v; updateField('annexures', up); }} {...gf(`Annexure #${i + 1} Pages`)} />
-                            </div>
-                          </div>
-                          <div className="relative">
-                            <input
-                              type="file"
-                              id={`file-upload-${ann.id}`}
-                              className="hidden"
-                              accept=".pdf"
-                              onChange={(e) => handleFileUpload(e, i)}
-                            />
-                            <label
-                              htmlFor={`file-upload-${ann.id}`}
-                              className={`border-2 border-dashed rounded-xl p-4 text-center font-bold hover:bg-gray-100 transition-all cursor-pointer flex items-center justify-center gap-2 ${ann.files.length > 0 ? 'border-green-300 bg-green-50 text-green-700' : 'border-gray-200 text-gray-400'}`}
-                            >
-                              {ann.files.length > 0 ? (
-                                <>
-                                  <CheckCircle2 className="w-4 h-4" />
-                                  PDF ATTACHED ({ann.pageCount} pages detected)
-                                </>
-                              ) : (
-                                <>
-                                  <Paperclip className="w-4 h-4" />
-                                  UPLOAD PDF (Auto-Count Pages)
-                                </>
-                              )}
-                            </label>
-                          </div>
-                        </div>
-                      ))}
-                    </RepeatableBlock>
-                  </CollapsibleSection>
 
                   <CollapsibleSection title="Miscellaneous Applications" defaultOpen={false}>
                     <RepeatableBlock title="Applications" onAdd={() => updateField('applications', [...formData.applications, { id: Date.now().toString(), description: '', showethContent: '', prayerContent: '', useMainAffidavit: true, verificationDate: '' }])}>

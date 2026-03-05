@@ -123,6 +123,8 @@ export interface WritFormData {
 
   // Affidavit
   affidavitIdentity: 'Petitioner' | 'Authorized Representative';
+  affidavitRelationType: 'S/o' | 'D/o' | 'W/o';
+  affidavitRelationName: string;
   affidavitName: string;
   affidavitAge: string;
   affidavitAddress: string;

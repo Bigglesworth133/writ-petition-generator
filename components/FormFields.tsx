@@ -1,5 +1,5 @@
 
-import React, { memo, useState, useRef, useMemo } from 'react';
+import React, { memo, useState, useRef, useMemo, useEffect } from 'react';
 import { MessageSquare, Trash2, Edit, CheckCircle2, CornerUpRight, ChevronDown, ChevronUp, CheckCircle, FileText, Paperclip } from 'lucide-react';
 import ReactQuill, { Quill } from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
@@ -157,6 +157,48 @@ export const TextInput = memo(({
   );
 });
 
+const TableGridPicker = ({ onSelect, onClose, position }: { onSelect: (rows: number, cols: number) => void, onClose: () => void, position: { top: number, left: number } }) => {
+  const [hoverRow, setHoverRow] = useState(0);
+  const [hoverCol, setHoverCol] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  return (
+    <div
+      ref={ref}
+      className="absolute z-50 bg-white border border-gray-200 shadow-xl rounded-lg p-3"
+      style={{ top: position.top, left: position.left }}
+    >
+      <div className="text-xs font-bold text-gray-500 mb-2 text-center pointer-events-none select-none">
+        {hoverRow > 0 && hoverCol > 0 ? `${hoverRow} x ${hoverCol} Table` : "Insert Table"}
+      </div>
+      <div className="flex flex-col gap-1" onMouseLeave={() => { setHoverRow(0); setHoverCol(0); }}>
+        {Array.from({ length: 8 }).map((_, r) => (
+          <div key={r} className="flex gap-1">
+            {Array.from({ length: 8 }).map((_, c) => (
+              <div
+                key={c}
+                className={`w-4 h-4 border border-gray-300 rounded-[2px] cursor-pointer transition-colors ${r < hoverRow && c < hoverCol ? 'bg-blue-500 border-blue-600' : 'bg-gray-50 hover:bg-gray-100'}`}
+                onMouseEnter={() => { setHoverRow(r + 1); setHoverCol(c + 1); }}
+                onClick={() => { onSelect(r + 1, c + 1); onClose(); }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const RichTextInput = memo(({
   label,
   value,
@@ -171,26 +213,37 @@ export const RichTextInput = memo(({
   onAddReply,
   annotations
 }: InputProps) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [tablePickerParams, setTablePickerParams] = useState<{ quill: any, top: number, left: number } | null>(null);
+
   const modules = useMemo(() => ({
     toolbar: {
       container: [
         ['bold', 'italic', 'underline'],
         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
         [{ 'align': [] }],
-        ['customTable'],
-        ['clean']
+        ['customTable']
       ],
       handlers: {
         customTable: function (this: any) {
-          const rows = prompt("Enter number of rows:", "3");
-          if (!rows) return;
-          const cols = prompt("Enter number of columns:", "3");
-          if (!cols) return;
+          const range = this.quill.getSelection();
+          const index = range ? range.index : null;
 
-          const tableModule = this.quill.getModule('table');
-          if (tableModule) {
-            tableModule.insertTable(parseInt(rows, 10), parseInt(cols, 10));
+          if (containerRef.current) {
+            const btn = containerRef.current.querySelector('.ql-customTable');
+            if (btn) {
+              const rect = btn.getBoundingClientRect();
+              const containerRect = containerRef.current.getBoundingClientRect();
+              setTablePickerParams({
+                quill: this.quill,
+                index, // Save the selection
+                top: rect.bottom - containerRect.top + 5,
+                left: Math.min(rect.left - containerRect.left, containerRect.width - 200)
+              });
+              return;
+            }
           }
+          setTablePickerParams({ quill: this.quill, index, top: 40, left: 0 });
         }
       }
     },
@@ -198,7 +251,7 @@ export const RichTextInput = memo(({
   }), []);
 
   return (
-    <div className="mb-5 relative group">
+    <div className="mb-5 relative group" ref={containerRef}>
       <div className="flex justify-between items-baseline mb-1">
         <label className="block text-sm font-bold text-gray-800">{label}</label>
         <div className="flex items-center gap-2">
@@ -235,6 +288,30 @@ export const RichTextInput = memo(({
           placeholder={placeholder || 'Start typing...'}
           className="custom-quill border-none"
         />
+        {tablePickerParams && (
+          <TableGridPicker
+            position={{ top: tablePickerParams.top, left: tablePickerParams.left }}
+            onClose={() => setTablePickerParams(null)}
+            onSelect={(rows, cols) => {
+              const quill = tablePickerParams.quill;
+              quill.focus(); // Restore focus to editor first
+
+              // We need a slight delay to ensure focus is restored before inserting
+              setTimeout(() => {
+                const tableModule = quill.getModule('table');
+                if (tableModule) {
+                  // If there was a saved selection index, we could setSelection, but focus() usually restores it
+                  // or places it at the end.
+                  if (tablePickerParams.index !== null) {
+                    quill.setSelection(tablePickerParams.index, 0);
+                  }
+                  tableModule.insertTable(rows, cols);
+                }
+                setTablePickerParams(null);
+              }, 10);
+            }}
+          />
+        )}
       </div>
     </div>
   );
