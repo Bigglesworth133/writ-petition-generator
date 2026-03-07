@@ -873,7 +873,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
           {/* Application Affidavit */}
           <Page sectionId={`app-${idx}-affidavit`} pageNum={getPageNumStr(`app-${idx}-affidavit`, 1)} actualPageNum={++ap}>
             <AppHeader />
-            <div className="text-center font-bold mb-10 uppercase">Affidavit</div>
+            <div className="text-center font-bold mb-10 uppercase underline">Affidavit</div>
             <p className="mb-6 leading-relaxed">
               I, <span className="font-bold">{data.affidavitName}</span>, aged about <span className="font-bold">{data.affidavitAge}</span> years,
               resident of <span className="font-bold">{data.affidavitAddress}</span>, presently at <span className="font-bold">{data.affidavitLocation}</span>,
@@ -885,7 +885,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             </ol>
             <div className="mt-20 text-right font-bold uppercase">Deponent</div>
             <div className="mt-20 border-t border-black pt-10">
-              <div className="text-center font-bold mb-6 uppercase">Verification</div>
+              <div className="text-left font-bold mb-6 uppercase underline">Verification</div>
               <p>Verified at <span className="font-bold uppercase">{data.affidavitLocation}</span> on <span className="font-bold">{app.verificationDate || data.verificationDate}</span> that the contents of the above affidavit are true and correct.</p>
               <div className="mt-10 text-right font-bold uppercase">Deponent</div>
             </div>
