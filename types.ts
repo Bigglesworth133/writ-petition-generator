@@ -76,6 +76,7 @@ export interface WritFormData {
   applications: Application[];
   notes: NoteEntry[];
   letterOfAuthorityUpload: string | null;
+  letterOfAuthorityUploadPages: string | null;
 
   // Petition Through
   location: string;
@@ -134,6 +135,7 @@ export interface WritFormData {
 
   // Proof of Service
   proofOfServiceUploads: string[];
+  proofOfServicePages: string[];
 
   // Form Config
   includeListingProforma: boolean;

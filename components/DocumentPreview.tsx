@@ -229,9 +229,23 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       pushItem(app.indexTitle || ('Misc. Appl.: ' + app.description), 'app-' + idx, 2);
     });
 
-    if (data.letterOfAuthorityUpload) pushItem('Letter of Authority', 'loa');
+    if (data.letterOfAuthorityUpload) {
+      const loaPages = data.letterOfAuthorityUpload.toLowerCase().endsWith('.pdf') || data.letterOfAuthorityUpload.startsWith('data:application/pdf')
+        ? parseInt(data.letterOfAuthorityUploadPages || '1', 10)
+        : 1;
+      pushItem('Letter of Authority', 'loa', loaPages);
+    }
     pushItem('Vakalatnama', 'vakalatnama');
-    if (data.proofOfServiceUploads.length > 0) pushItem('Proof of Service', 'pos');
+    if (data.proofOfServiceUploads.length > 0) {
+      let posPages = 0;
+      data.proofOfServiceUploads.forEach((upload, idx) => {
+        const pagesStr = data.proofOfServicePages?.[idx] || '1';
+        posPages += parseInt(pagesStr, 10);
+      });
+      // Fallback if the calculation yields 0
+      posPages = posPages || 1;
+      pushItem('Proof of Service', 'pos', posPages);
+    }
 
     return items;
   }, [data, pageCounts]);
@@ -880,24 +894,27 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       ))}
       {/* 9. LETTER OF AUTHORITY */}
       {data.letterOfAuthorityUpload && (
-        <Page sectionId="loa" pageNum={getPageNumStr("loa")} actualPageNum={++ap}>
-          <Header />
-          <div className="text-center font-bold mb-20 uppercase">Letter of Authority</div>
-          <div className="border border-black h-[600px] flex items-center justify-center bg-gray-50 overflow-hidden relative">
-            {data.letterOfAuthorityUpload ? (
-              data.letterOfAuthorityUpload.toLowerCase().endsWith('.pdf') || data.letterOfAuthorityUpload.startsWith('data:application/pdf') ? (
-                <embed src={data.letterOfAuthorityUpload} className="w-full h-full" type="application/pdf" />
-              ) : (
-                <img src={data.letterOfAuthorityUpload} className="w-full h-full object-contain" alt="LOA" />
-              )
-            ) : (
-              <div className="text-center text-gray-400 font-bold">
-                [ATTACHED LETTER OF AUTHORITY]
+        data.letterOfAuthorityUpload.toLowerCase().endsWith('.pdf') || data.letterOfAuthorityUpload.startsWith('data:application/pdf') ? (
+          Array.from({ length: parseInt(data.letterOfAuthorityUploadPages || '1', 10) }).map((_, idx) => (
+            <Page key={`loa-pdf-${idx}`} sectionId="loa" pageNum={getPageNumStr("loa", 1)} actualPageNum={++ap} noPadding={true}>
+              <div className="absolute top-[1.5in] w-full z-10">
+                {idx === 0 ? (
+                  <div className="text-center font-bold uppercase underline">Letter of Authority</div>
+                ) : null}
               </div>
-            )}
-          </div>
-          <Signature />
-        </Page>
+              <div className="w-full h-full flex items-center justify-center">
+                <PDFPageRenderer dataUrl={data.letterOfAuthorityUpload!} pageNumber={idx + 1} />
+              </div>
+            </Page>
+          ))
+        ) : (
+          <Page sectionId="loa" pageNum={getPageNumStr("loa", 1)} actualPageNum={++ap} noPadding={true}>
+            <div className="absolute top-[1.5in] w-full text-center font-bold uppercase underline z-10">Letter of Authority</div>
+            <div className="w-full h-full flex items-center justify-center">
+              <img src={data.letterOfAuthorityUpload} className="w-full h-full object-contain" alt="LOA" />
+            </div>
+          </Page>
+        )
       )}
 
       {/* 10. VAKALATNAMA */}
@@ -947,28 +964,49 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
 
       {/* 11. PROOF OF SERVICE */}
       {data.proofOfServiceUploads.length > 0 && (
-        <Page sectionId="pos" pageNum={getPageNumStr("pos")} actualPageNum={++ap}>
-          <Header />
-          <div className="text-center font-bold mb-20 uppercase">Proof of Service</div>
-          <div className="space-y-4">
-            {data.proofOfServiceUploads.map((file, i) => (
-              <div key={i} className="border border-black h-96 flex items-center justify-center bg-gray-50 overflow-hidden relative">
-                {file.startsWith('data:') ? (
-                  file.startsWith('data:application/pdf') ? (
-                    <embed src={file} className="w-full h-full" type="application/pdf" />
-                  ) : (
-                    <img src={file} className="w-full h-full object-contain" alt={`Receipt ${i + 1}`} />
-                  )
-                ) : (
-                  <div className="text-center text-gray-400 font-bold">
-                    [RECEIPT / PROOF OF SERVICE #{i + 1}]
+        <div id="pos-section">
+          {data.proofOfServiceUploads.map((file, i) => {
+            const isPdf = file.startsWith('data:application/pdf') || file.toLowerCase().endsWith('.pdf');
+            const pageCount = isPdf && data.proofOfServicePages ? parseInt(data.proofOfServicePages[i] || '1', 10) : 1;
+            const pages = [];
+
+            for (let subIdx = 1; subIdx <= pageCount; subIdx++) {
+              const currentAp = ++ap;
+              const docPageP = getPageNumStr(`pos-${i}-${subIdx}`, 1);
+
+              pages.push(
+                <Page key={`pos-${i}-${subIdx}`} sectionId="pos" pageNum={docPageP} actualPageNum={currentAp} noPadding={true}>
+                  <div className="absolute top-[1.2in] w-full z-10">
+                    {subIdx === 1 ? (
+                      <div className="flex flex-col items-center justify-center font-bold uppercase space-y-2">
+                        <span className="underline">Proof of Service</span>
+                      </div>
+                    ) : null}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
-          <Signature />
-        </Page>
+
+                  <div className="w-full h-full flex items-center justify-center">
+                    {file.startsWith('data:') ? (
+                      isPdf ? (
+                        <PDFPageRenderer dataUrl={file} pageNumber={subIdx} />
+                      ) : (
+                        subIdx === 1 ? (
+                          <img src={file} className="w-full h-full object-contain" alt={`Receipt ${i + 1}`} />
+                        ) : (
+                          <div className="text-center text-gray-400 py-20">[CONT. DOCUMENT]</div>
+                        )
+                      )
+                    ) : (
+                      <div className="text-center text-gray-400 font-bold italic py-20">
+                        [RECEIPT / PROOF OF SERVICE #{i + 1}]
+                      </div>
+                    )}
+                  </div>
+                </Page>
+              );
+            }
+            return pages;
+          })}
+        </div>
       )}
     </div>
   );

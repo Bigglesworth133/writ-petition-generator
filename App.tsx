@@ -25,7 +25,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLi
 
 const INITIAL_DATA: WritFormData = {
   petitionType: 'Civil',
-  year: '2025',
+  year: '2026',
   petitioners: [{ id: '1', name: '', address: '', email: '', authRep: '' }],
   respondents: [{ id: '1', name: '', address: '', email: '', authRep: '' }],
   petitionDescription: 'GROUP CAPTAIN VS CENTRAL PUBLIC + GLASS MANUFACTURERS',
@@ -33,6 +33,7 @@ const INITIAL_DATA: WritFormData = {
   applications: [],
   notes: [],
   letterOfAuthorityUpload: null,
+  letterOfAuthorityUploadPages: null,
   location: 'New Delhi',
   filingDate: new Date().toLocaleDateString('en-GB').replace(/\//g, '.'),
   advocates: [{ id: '1', name: '', enrolmentNumber: '' }],
@@ -71,6 +72,7 @@ const INITIAL_DATA: WritFormData = {
   affidavitLocation: 'New Delhi',
   verificationDate: '',
   proofOfServiceUploads: [],
+  proofOfServicePages: [],
   includeListingProforma: false,
   includeCertificate: false,
   includeIndexNotes: false,
@@ -319,12 +321,15 @@ export default function App() {
       reader.onloadend = async () => {
         updateField(fieldName, reader.result as string); // base64
 
-        // Auto-detect pages if PDF and field is court fee
-        if (file.type === 'application/pdf' && fieldName === 'courtFeeAttachment') {
+        // Auto-detect pages if PDF and field requires page count
+        if (file.type === 'application/pdf') {
           try {
-            const buffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
-            updateField('courtFeeAttachmentPages', pdf.numPages.toString());
+            if (fieldName === 'courtFeeAttachment' || fieldName === 'letterOfAuthorityUpload') {
+              const buffer = await file.arrayBuffer();
+              const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+              const pagesField = fieldName === 'courtFeeAttachment' ? 'courtFeeAttachmentPages' : 'letterOfAuthorityUploadPages';
+              updateField(pagesField as keyof WritFormData, pdf.numPages.toString());
+            }
           } catch (err) {
             console.error('PDF Read Error:', err);
           }
@@ -728,27 +733,25 @@ export default function App() {
                     </div>
                   </CollapsibleSection>
 
-                  <div className="mt-6 mb-8 flex flex-wrap gap-4">
-                    <button
-                      onClick={() => updateField('includeListingProforma', !formData.includeListingProforma)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${formData.includeListingProforma ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'}`}
-                    >
-                      <FileText className="w-4 h-4" /> {formData.includeListingProforma ? 'PROFORMA: INCLUDED' : 'PROFORMA: EXCLUDED'}
-                    </button>
-                  </div>
-
-
-
-
-
                   <CollapsibleSection title="Proof of Service" defaultOpen={false}>
                     <div className="mb-4">
-                      <input type="file" id="pos-upload" className="hidden" accept="image/*,.pdf" onChange={(e) => {
+                      <input type="file" id="pos-upload" className="hidden" accept="image/*,.pdf" onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
                           const reader = new FileReader();
-                          reader.onloadend = () => {
+                          reader.onloadend = async () => {
+                            let pages = '1';
+                            if (file.type === 'application/pdf') {
+                              try {
+                                const buffer = await file.arrayBuffer();
+                                const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+                                pages = pdf.numPages.toString();
+                              } catch (err) {
+                                console.error('PDF Read Error:', err);
+                              }
+                            }
                             updateField('proofOfServiceUploads', [...formData.proofOfServiceUploads, reader.result as string]);
+                            updateField('proofOfServicePages', [...formData.proofOfServicePages, pages]);
                           };
                           reader.readAsDataURL(file);
                         }
@@ -763,13 +766,27 @@ export default function App() {
                           <div className="flex items-center gap-2 text-sm font-bold text-gray-600">
                             <FileText className="w-4 h-4" /> RECEIPT #{i + 1} {file.startsWith('data:') && '(Attached)'}
                           </div>
-                          <button onClick={() => updateField('proofOfServiceUploads', formData.proofOfServiceUploads.filter((_, idx) => idx !== i))} className="text-gray-300 hover:text-red-500">
+                          <button onClick={() => {
+                            const newUploads = formData.proofOfServiceUploads.filter((_, idx) => idx !== i);
+                            const newPages = formData.proofOfServicePages.filter((_, idx) => idx !== i);
+                            updateField('proofOfServiceUploads', newUploads);
+                            updateField('proofOfServicePages', newPages);
+                          }} className="text-gray-300 hover:text-red-500">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       ))}
                     </div>
                   </CollapsibleSection>
+
+                  <div className="mt-6 mb-8 flex flex-wrap gap-4">
+                    <button
+                      onClick={() => updateField('includeListingProforma', !formData.includeListingProforma)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${formData.includeListingProforma ? 'bg-blue-600 text-white border-blue-600 shadow-lg' : 'bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-300'}`}
+                    >
+                      <FileText className="w-4 h-4" /> {formData.includeListingProforma ? 'PROFORMA: INCLUDED' : 'PROFORMA: EXCLUDED'}
+                    </button>
+                  </div>
 
                   <div className="mt-12 bg-white rounded-[2rem] p-10 shadow-2xl relative z-10 border border-gray-200 overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-blue-50 to-transparent opacity-50 rounded-bl-full pointer-events-none"></div>
