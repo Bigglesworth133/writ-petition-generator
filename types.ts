@@ -25,6 +25,7 @@ export interface Annexure {
 
 export interface Application {
   id: string;
+  indexTitle?: string;
   description: string;
   showethContent: string;
   prayerContent: string;

@@ -226,7 +226,7 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
     });
 
     data.applications.forEach((app, idx) => {
-      pushItem('Misc. Appl.: ' + app.description, 'app-' + idx, 2);
+      pushItem(app.indexTitle || ('Misc. Appl.: ' + app.description), 'app-' + idx, 2);
     });
 
     if (data.letterOfAuthorityUpload) pushItem('Letter of Authority', 'loa');
@@ -283,6 +283,37 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       <div className="my-4">
         <p>{getWpShorthand()} NO. _______ OF {data.year}</p>
         {data.petitionType === 'Criminal' && <p>AND<br />CRL.M.A. NO. ______ OF {data.year}</p>}
+      </div>
+      <div className="mb-4 text-left">
+        <p className="mb-4 font-normal uppercase underline decoration-solid underline-offset-4">IN THE MATTER OF:</p>
+        <div className="space-y-6">
+          <div className="px-0 flex justify-between items-end">
+            <div className="flex-1 text-left">
+              <p className="font-normal">{getCauseTitle().pText}</p>
+            </div>
+            <div className="font-bold w-32 text-right ml-4 whitespace-nowrap">... {data.petitioners.length > 1 ? 'PETITIONERS' : 'PETITIONER'}</div>
+          </div>
+
+          <div className="px-0 font-normal lowercase text-center">versus</div>
+
+          <div className="px-0 flex justify-between items-end">
+            <div className="flex-1 text-left">
+              <p className="font-normal">{getCauseTitle().rText}</p>
+            </div>
+            <div className="font-bold w-32 text-right ml-4 whitespace-nowrap">... {data.respondents.length > 1 ? 'RESPONDENTS' : 'RESPONDENT'}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const AppHeader = () => (
+    <div className="text-center font-bold mb-10 uppercase">
+      <p>IN THE HON'BLE HIGH COURT OF DELHI AT NEW DELHI</p>
+      <div className="my-4">
+        <p>C.M. No. _______ OF {data.year}</p>
+        <p>IN</p>
+        <p>{data.petitionType === 'Civil' ? 'WRIT PETITION (CIVIL)' : 'WRIT PETITION (CRIMINAL)'} NO. _______ OF {data.year}</p>
       </div>
       <div className="mb-4 text-left">
         <p className="mb-4 font-normal uppercase underline decoration-solid underline-offset-4">IN THE MATTER OF:</p>
@@ -705,8 +736,11 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
             <div className="mb-6 uppercase">
               IN THE LIGHT OF THE FACTS AND CIRCUMSTANCES STATED HEREINABOVE, IT IS MOST HUMBLY PRAYED THAT THIS HON'BLE COURT MAY BE GRACIOUSLY PLEASED TO:
             </div>
-            <div className="space-y-4 mb-10 text-justify">
+            <div className="space-y-4 mb-6 text-justify">
               <FormattedText text={data.petitionPrayers} />
+            </div>
+            <div className="mb-10 uppercase">
+              AND FOR THIS ACT OF KINDNESS THE PETITIONER AS IN DUTY BOUND SHALL EVER PRAY.
             </div>
             <Signature />
           </Page>
@@ -799,28 +833,32 @@ export const DocumentPreview: React.FC<PreviewProps> = ({
       </div>
 
       {/* 8. APPLICATIONS */}
-      {data.applications.map((app) => (
+      {data.applications.map((app, idx) => (
         <React.Fragment key={app.id}>
-          <Page sectionId="loa" pageNum={getPageNumStr("loa")} actualPageNum={++ap}>
-            <Header />
-            <div className="text-center font-bold mb-8 px-10 uppercase">
-              IN THE MATTER OF:<br />
-              MISC. APPL. NO. ______ OF {data.year}<br />
-              IN<br />
-              {getWpShorthand()} NO. _______ OF {data.year}
+          <Page sectionId={`app-${idx}`} pageNum={getPageNumStr(`app-${idx}`)} actualPageNum={++ap}>
+            <AppHeader />
+            <div className="text-center font-bold mb-10 uppercase underline decoration-solid underline-offset-4">
+              APPLICATION UNDER SECTION 151 OF THE CODE OF CIVIL PROCEDURE, 1908 FOR {app.description.toUpperCase()}
             </div>
-            <div className="text-center font-bold mb-10 uppercase">
-              APPLICATION UNDER SECTION 151 OF CPC FOR {app.description.toUpperCase()}
-            </div>
-            <div className="whitespace-pre-wrap mb-10"><FormattedText text={app.showethContent} /></div>
+            <div className="font-bold mb-6 uppercase">MOST RESPECTFULLY SHOWETH:</div>
+            <div
+              className="rich-text-content ql-editor mb-10 text-justify w-full"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(app.showethContent, { ADD_ATTR: ['class', 'style', 'data-list'] }) }}
+            />
             <div className="font-bold mb-6 uppercase">Prayer:</div>
-            <div className="whitespace-pre-wrap mb-10"><FormattedText text={app.prayerContent} /></div>
+            <div
+              className="rich-text-content ql-editor mb-10 text-justify w-full"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(app.prayerContent, { ADD_ATTR: ['class', 'style', 'data-list'] }) }}
+            />
+            <div className="mb-10 uppercase text-justify w-full">
+              AND FOR THIS ACT OF KINDNESS THE PETITIONER AS INDUTY BOUND, SHALL EVER PRAY.
+            </div>
             <Signature />
           </Page>
 
           {/* Application Affidavit */}
-          <Page sectionId="vakalatnama" pageNum={getPageNumStr("vakalatnama")} actualPageNum={++ap}>
-            <Header />
+          <Page sectionId={`app-${idx}-affidavit`} pageNum={getPageNumStr(`app-${idx}-affidavit`, 1)} actualPageNum={++ap}>
+            <AppHeader />
             <div className="text-center font-bold mb-10 uppercase">Affidavit</div>
             <p className="mb-6 leading-relaxed">
               I, <span className="font-bold">{data.affidavitName}</span>, aged about <span className="font-bold">{data.affidavitAge}</span> years,

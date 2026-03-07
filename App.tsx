@@ -700,6 +700,25 @@ export default function App() {
                     </RepeatableBlock>
                   </CollapsibleSection>
 
+                  <CollapsibleSection title="Miscellaneous Applications" defaultOpen={false}>
+                    <RepeatableBlock title="Applications" onAdd={() => updateField('applications', [...formData.applications, { id: Date.now().toString(), indexTitle: '', description: '', showethContent: '', prayerContent: '', useMainAffidavit: true, verificationDate: '' }])}>
+                      {formData.applications.map((app, i) => (
+                        <div key={app.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200 mb-4">
+                          <button onClick={() => updateField('applications', formData.applications.filter(x => x.id !== app.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                          <div className="grid grid-cols-1 gap-4 mb-4">
+                            <TextInput label={`App #${i + 1} Title for Index`} placeholder="E.g. Application u/Sec 151 of the CPC, 1908 seeking ..." value={app.indexTitle || ''} onChange={v => { const up = [...formData.applications]; up[i].indexTitle = v; updateField('applications', up); }} {...gf(`App #${i + 1} Index Title`)} />
+                            <TextInput label={`App #${i + 1} Description`} value={app.description} onChange={v => { const up = [...formData.applications]; up[i].description = v; updateField('applications', up); }} {...gf(`App #${i + 1} Desc`)} />
+                          </div>
+                          <div className="grid grid-cols-1 gap-4 mt-4">
+                            <RichTextInput label="Showeth Content" value={app.showethContent} onChange={v => { const up = [...formData.applications]; up[i].showethContent = v; updateField('applications', up); }} {...gf(`App #${i + 1} Showeth`)} />
+                            <RichTextInput label="Prayer Content" value={app.prayerContent} onChange={v => { const up = [...formData.applications]; up[i].prayerContent = v; updateField('applications', up); }} {...gf(`App #${i + 1} Prayer`)} />
+                          </div>
+                          <TextInput label="Specific Verification Date (if different)" value={app.verificationDate} onChange={v => { const up = [...formData.applications]; up[i].verificationDate = v; updateField('applications', up); }} {...gf(`App #${i + 1} Verification Date`)} />
+                        </div>
+                      ))}
+                    </RepeatableBlock>
+                  </CollapsibleSection>
+
                   <CollapsibleSection title="Letter of Authority" defaultOpen={false}>
                     <div className="relative">
                       <input type="file" id="loa-upload" className="hidden" accept="image/*,.pdf" onChange={(e) => handleImageUpload(e, 'letterOfAuthorityUpload')} />
@@ -718,21 +737,7 @@ export default function App() {
                     </button>
                   </div>
 
-                  <CollapsibleSection title="Miscellaneous Applications" defaultOpen={false}>
-                    <RepeatableBlock title="Applications" onAdd={() => updateField('applications', [...formData.applications, { id: Date.now().toString(), description: '', showethContent: '', prayerContent: '', useMainAffidavit: true, verificationDate: '' }])}>
-                      {formData.applications.map((app, i) => (
-                        <div key={app.id} className="bg-gray-50 p-6 rounded-2xl relative border border-gray-200 mb-4">
-                          <button onClick={() => updateField('applications', formData.applications.filter(x => x.id !== app.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                          <TextInput label={`App #${i + 1} Description`} value={app.description} onChange={v => { const up = [...formData.applications]; up[i].description = v; updateField('applications', up); }} {...gf(`App #${i + 1} Desc`)} />
-                          <div className="grid grid-cols-2 gap-4 mt-4">
-                            <TextInput label="Showeth Content" multiline value={app.showethContent} onChange={v => { const up = [...formData.applications]; up[i].showethContent = v; updateField('applications', up); }} {...gf(`App #${i + 1} Showeth`)} />
-                            <TextInput label="Prayer Content" multiline value={app.prayerContent} onChange={v => { const up = [...formData.applications]; up[i].prayerContent = v; updateField('applications', up); }} {...gf(`App #${i + 1} Prayer`)} />
-                          </div>
-                          <TextInput label="Specific Verification Date (if different)" value={app.verificationDate} onChange={v => { const up = [...formData.applications]; up[i].verificationDate = v; updateField('applications', up); }} {...gf(`App #${i + 1} Verification Date`)} />
-                        </div>
-                      ))}
-                    </RepeatableBlock>
-                  </CollapsibleSection>
+
 
 
 
